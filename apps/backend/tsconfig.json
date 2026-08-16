@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext"],
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@repo/db/prisma": ["../../packages/db/index.ts"],
+      "@repo/db": ["../../packages/db/index.ts"],
+      "@repo/zod/zod": ["../../packages/zod/index.ts"],
+      "@repo/zod": ["../../packages/zod/index.ts"]
+    }
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
+}
