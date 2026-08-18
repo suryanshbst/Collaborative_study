@@ -1,0 +1,47 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: dockerfile/Dockerfile.backend
+    container_name: studysphere-backend-dev
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - PORT=8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/backend:/app/apps/backend
+      - ./packages:/app/packages
+    networks:
+      - studysphere-dev-network
+
+  web:
+    build:
+      context: .
+      dockerfile: dockerfile/Dockerfile.frontend
+      args:
+        - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+        - NEXT_PUBLIC_WS_URL=ws://localhost:8000
+    container_name: studysphere-web-dev
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app/apps/web
+      - ./packages:/app/packages
+    depends_on:
+      - backend
+    networks:
+      - studysphere-dev-network
+
+networks:
+  studysphere-dev-network:
+    driver: bridge
