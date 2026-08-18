@@ -1,102 +1,505 @@
-import Image, { type ImageProps } from "next/image";
-import { Button } from "@repo/ui/button";
-import styles from "./page.module.css";
+"use client";
 
-type Props = Omit<ImageProps, "src"> & {
-  srcLight: string;
-  srcDark: string;
-};
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Navbar } from "@/components/Navbar";
+import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
+import type { HistoryEntry } from "@/lib/types";
 
-const ThemeImage = (props: Props) => {
-  const { srcLight, srcDark, ...rest } = props;
+const STUDY_CODES_LIST = [
+  "study-hall",
+  "graphs-for-placement-season",
+  "dynamic-programming-marathon",
+  "dsa-tree-problems-prep",
+  "system-design-mock-interview",
+  "dbms-and-os-revision",
+];
+
+export default function HomePage() {
+  const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
+
+  const [meetingCode, setMeetingCode] = useState("");
+  const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
+
+  // Typewriter animation state
+  const [placeholderText, setPlaceholderText] = useState("");
+  const [wordIndex, setWordIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Fetch past study sessions for logged-in users
+  useEffect(() => {
+    if (isAuthenticated) {
+      api
+        .get<{ history: HistoryEntry[] }>("/api/history")
+        .then((res) => setHistoryEntries(res.data.history || []))
+        .catch((err) => console.error("Error loading history:", err));
+    }
+  }, [isAuthenticated]);
+
+  // Typewriter effect
+  useEffect(() => {
+    const currentWord = STUDY_CODES_LIST[wordIndex % STUDY_CODES_LIST.length]!;
+    const typingSpeed = isDeleting ? 40 : 85;
+
+    const timer = setTimeout(() => {
+      if (!isDeleting && placeholderText === currentWord) {
+        setTimeout(() => setIsDeleting(true), 1600);
+      } else if (isDeleting && placeholderText === "") {
+        setIsDeleting(false);
+        setWordIndex((prev) => (prev + 1) % STUDY_CODES_LIST.length);
+      } else {
+        const nextText = isDeleting
+          ? currentWord.substring(0, placeholderText.length - 1)
+          : currentWord.substring(0, placeholderText.length + 1);
+        setPlaceholderText(nextText);
+      }
+    }, typingSpeed);
+
+    return () => clearTimeout(timer);
+  }, [placeholderText, isDeleting, wordIndex]);
+
+  const handleJoinVideoCall = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = meetingCode.trim() || "study-hall";
+    router.push(`/room/${encodeURIComponent(code)}`);
+  };
 
   return (
-    <>
-      <Image {...rest} src={srcLight} className="imgLight" />
-      <Image {...rest} src={srcDark} className="imgDark" />
-    </>
-  );
-};
+    <div style={{ minHeight: "100vh", paddingBottom: "80px", position: "relative", overflow: "hidden" }}>
+      {/* Center Main Vector Orbit Ring */}
+      <svg className="vector-bg-decoration" width="700" height="700" viewBox="0 0 700 700" fill="none" style={{ top: "35%", left: "50%", animation: "vectorRingSpin 80s linear infinite" }}>
+        <circle cx="350" cy="350" r="320" stroke="var(--border-light)" strokeWidth="1.5" strokeDasharray="12 12" />
+        <circle cx="350" cy="350" r="220" stroke="var(--border-light)" strokeWidth="1" />
+        <circle cx="350" cy="30" r="6" fill="#10B981" />
+        <circle cx="670" cy="350" r="4" fill="var(--accent-lime)" />
+      </svg>
 
-export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <ThemeImage
-          className={styles.logo}
-          srcLight="turborepo-dark.svg"
-          srcDark="turborepo-light.svg"
-          alt="Turborepo logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>apps/web/app/page.tsx</code>
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+      {/* Ambient Faded Vector 1: Top Right Gyroscope */}
+      <svg className="ambient-vector-1" width="220" height="220" viewBox="0 0 220 220" fill="none" style={{ top: "10%", right: "4%" }}>
+        <circle cx="110" cy="110" r="90" stroke="#818CF8" strokeWidth="1.5" strokeDasharray="8 8" />
+        <circle cx="110" cy="110" r="65" stroke="#34D399" strokeWidth="1.2" />
+        <ellipse cx="110" cy="110" rx="90" ry="35" stroke="#A7F3D0" strokeWidth="1.2" transform="rotate(-25 110 110)" />
+        <circle cx="110" cy="20" r="4" fill="#818CF8" />
+        <circle cx="175" cy="110" r="3.5" fill="#34D399" />
+      </svg>
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new/clone?demo-description=Learn+to+implement+a+monorepo+with+a+two+Next.js+sites+that+has+installed+three+local+packages.&demo-image=%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F4K8ZISWAzJ8X1504ca0zmC%2F0b21a1c6246add355e55816278ef54bc%2FBasic.png&demo-title=Monorepo+with+Turborepo&demo-url=https%3A%2F%2Fexamples-basic-web.vercel.sh%2F&from=templates&project-name=Monorepo+with+Turborepo&repository-name=monorepo-turborepo&repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fturborepo%2Ftree%2Fmain%2Fexamples%2Fbasic&root-directory=apps%2Fdocs&skippable-integrations=1&teamSlug=vercel&utm_source=create-turbo"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Ambient Faded Vector 2: Mid Left Mesh Node Constellation */}
+      <svg className="ambient-vector-2" width="260" height="260" viewBox="0 0 260 260" fill="none" style={{ top: "38%", left: "2%" }}>
+        <polygon points="130,30 220,90 190,200 70,200 40,90" stroke="#A78BFA" strokeWidth="1.5" strokeDasharray="6 6" />
+        <line x1="130" y1="30" x2="190" y2="200" stroke="#60A5FA" strokeWidth="1.2" />
+        <line x1="40" y1="90" x2="220" y2="90" stroke="#34D399" strokeWidth="1.2" />
+        <circle cx="130" cy="30" r="6" fill="#A78BFA" />
+        <circle cx="220" cy="90" r="5" fill="#60A5FA" />
+        <circle cx="190" cy="200" r="6" fill="#34D399" />
+        <circle cx="70" cy="200" r="5" fill="#A78BFA" />
+        <circle cx="40" cy="90" r="6" fill="#60A5FA" />
+      </svg>
+
+      {/* Ambient Faded Vector 3: Mid Right Isometric Coordinate Grid */}
+      <svg className="ambient-vector-3" width="240" height="240" viewBox="0 0 240 240" fill="none" style={{ top: "56%", right: "3%" }}>
+        <rect x="50" y="50" width="140" height="140" rx="16" stroke="#818CF8" strokeWidth="1.5" transform="rotate(15 120 120)" />
+        <rect x="70" y="70" width="100" height="100" rx="10" stroke="#34D399" strokeWidth="1.2" strokeDasharray="5 5" transform="rotate(-15 120 120)" />
+        <circle cx="120" cy="120" r="40" stroke="#A78BFA" strokeWidth="1.2" />
+        <circle cx="120" cy="120" r="6" fill="#818CF8" />
+      </svg>
+
+      {/* Ambient Faded Vector 4: Bottom Left Wave Arcs */}
+      <svg className="ambient-vector-1" width="200" height="200" viewBox="0 0 200 200" fill="none" style={{ top: "78%", left: "4%" }}>
+        <circle cx="100" cy="100" r="80" stroke="#34D399" strokeWidth="1.5" opacity="0.8" />
+        <ellipse cx="100" cy="100" rx="80" ry="25" stroke="#60A5FA" strokeWidth="1.2" strokeDasharray="6 4" transform="rotate(45 100 100)" />
+        <ellipse cx="100" cy="100" rx="80" ry="25" stroke="#A78BFA" strokeWidth="1.2" strokeDasharray="6 4" transform="rotate(-45 100 100)" />
+        <circle cx="100" cy="20" r="5" fill="#34D399" />
+      </svg>
+
+      {/* Feature Logo Vector 1: Pomodoro Timer */}
+      <svg className="ambient-vector-2" width="180" height="180" viewBox="0 0 180 180" fill="none" style={{ top: "18%", left: "6%" }}>
+        <circle cx="90" cy="90" r="60" stroke="#818CF8" strokeWidth="1.8" strokeDasharray="10 6" opacity="0.9" />
+        <circle cx="90" cy="90" r="45" stroke="#34D399" strokeWidth="1.2" />
+        <path d="M90 30 A60 60 0 0 1 150 90" stroke="#A7F3D0" strokeWidth="5" strokeLinecap="round" />
+        <line x1="90" y1="90" x2="90" y2="55" stroke="#A78BFA" strokeWidth="2.5" strokeLinecap="round" />
+        <line x1="90" y1="90" x2="115" y2="90" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="90" cy="90" r="6" fill="#818CF8" />
+      </svg>
+
+      {/* Feature Logo Vector 2: WebRTC Video Camera & Signal */}
+      <svg className="ambient-vector-1" width="190" height="190" viewBox="0 0 190 190" fill="none" style={{ top: "28%", right: "6%" }}>
+        <rect x="35" y="65" width="80" height="60" rx="12" stroke="#60A5FA" strokeWidth="1.8" />
+        <polygon points="115,80 150,60 150,130 115,110" stroke="#34D399" strokeWidth="1.8" strokeLinejoin="round" />
+        <circle cx="75" cy="95" r="14" stroke="#A78BFA" strokeWidth="1.5" strokeDasharray="4 4" />
+        <path d="M160 70 A40 40 0 0 1 160 120" stroke="#818CF8" strokeWidth="1.5" strokeDasharray="3 3" />
+        <path d="M170 55 A60 60 0 0 1 170 135" stroke="#818CF8" strokeWidth="1.2" opacity="0.6" strokeDasharray="3 3" />
+      </svg>
+
+      {/* Navbar component */}
+      <Navbar />
+
+      {/* Main Hero Card */}
+      <div className="ramain-hero-container vector-float" style={{ textAlign: "center", position: "relative", zIndex: 2 }}>
+        {isAuthenticated ? (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              background: "var(--accent-lime-light)",
+              color: "#047857",
+              fontWeight: "700",
+              fontSize: "0.85rem",
+              padding: "6px 16px",
+              borderRadius: "20px",
+              marginBottom: "20px",
+              border: "1px solid #A7F3D0",
+            }}
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://turborepo.dev/docs?utm_source"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
+            <span className="vector-pulse-dot" />
+            Active Session: {user?.username}
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              background: "#F3F4F6",
+              color: "#374151",
+              fontWeight: "700",
+              fontSize: "0.85rem",
+              padding: "6px 16px",
+              borderRadius: "20px",
+              marginBottom: "20px",
+              border: "1px solid #E5E7EB",
+            }}
           >
-            Read our docs
-          </a>
+            <span className="vector-pulse-dot" />
+            Instant WebRTC Collaboration
+          </div>
+        )}
+
+        <h1 className="ramain-title">
+          Collaborative <span className="lime-highlight">Study Rooms</span>
+          <br />
+          Built for Real Productivity.
+        </h1>
+
+        <p className="ramain-subtitle">
+          Launch instant peer-to-peer WebRTC video study rooms with synchronized Pomodoro timers, real-time shared markdown notes, and auto-saved session logs.
+        </p>
+
+        {/* Interactive Capsule Bar */}
+        <form onSubmit={handleJoinVideoCall} className="ramain-input-capsule">
+          <div className="ramain-capsule-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 10l-4 4l6 6l4 -16l-18 7l4 2l2 6l3 -4" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            className="ramain-capsule-input"
+            placeholder={`Type meeting code (e.g. ${placeholderText || "study-hall"})...`}
+            value={meetingCode}
+            onChange={(e) => setMeetingCode(e.target.value)}
+          />
+          <button type="submit" className="btn-lime">
+            Join Meeting →
+          </button>
+        </form>
+
+        {/* Quick Buttons */}
+        <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "28px", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={() => router.push("/history")}
+            className="btn-outline"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            View Call History
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/room/study-hall")}
+            className="btn-dark"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+          >
+            Launch Study Hall →
+          </button>
         </div>
-        <Button appName="web" className={styles.secondary}>
-          Open alert
-        </Button>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com/templates?search=turborepo&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://turborepo.dev?utm_source=create-turbo"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to turborepo.dev →
-        </a>
-      </footer>
+      </div>
+
+      {/* Bento Grid & Feature Sections */}
+      <div id="features" style={{ position: "relative", zIndex: 2 }}>
+        <div className="peerspace-section-header" style={{ position: "relative", zIndex: 2, padding: "0 20px" }}>
+          <h2 className="peerspace-section-title">
+            A unified WebRTC communication & study platform built for modern peers to move faster, clearer and at scale.
+          </h2>
+        </div>
+
+        <div className="peerspace-split-grid" style={{ position: "relative", zIndex: 2, padding: "0 20px" }}>
+          {/* Split Card 1 */}
+          <div className="peerspace-split-card">
+            <div className="peerspace-split-img bg-lime">
+              <div className="peerspace-split-img-title">/ Mesh Video & Audio</div>
+              <svg className="vector-wireframe-svg" width="200" height="150" viewBox="0 0 200 150" fill="none">
+                <path d="M40 110 L160 110 L180 135 L20 135 Z" fill="#111827" stroke="#111827" strokeWidth="2" strokeLinejoin="round" />
+                <rect x="50" y="30" width="100" height="80" rx="8" fill="#FFFFFF" stroke="#111827" strokeWidth="2.5" />
+                <rect x="62" y="42" width="76" height="56" rx="4" fill="#E8F8B6" stroke="#111827" strokeWidth="1.5" />
+                <circle cx="100" cy="64" r="14" fill="#111827" />
+                <rect x="88" y="80" width="24" height="12" rx="6" fill="#111827" />
+                <circle cx="95" cy="63" r="2.5" fill="#C5FF4A" />
+                <circle cx="105" cy="63" r="2.5" fill="#C5FF4A" />
+                <circle cx="25" cy="45" r="16" fill="#FFFFFF" stroke="#111827" strokeWidth="2" strokeDasharray="3 3" />
+                <circle cx="25" cy="45" r="5" fill="#10B981" />
+                <circle cx="175" cy="55" r="16" fill="#FFFFFF" stroke="#111827" strokeWidth="2" strokeDasharray="3 3" />
+                <circle cx="175" cy="55" r="5" fill="#3B82F6" />
+                <path d="M40 45 L50 45" stroke="#111827" strokeWidth="1.5" strokeDasharray="2 2" />
+                <path d="M150 55 L160 55" stroke="#111827" strokeWidth="1.5" strokeDasharray="2 2" />
+              </svg>
+            </div>
+            <div className="peerspace-split-content">
+              <h3 className="peerspace-split-heading">
+                / Mesh WebRTC Video Calling
+              </h3>
+              <p className="peerspace-split-desc">
+                Direct peer-to-peer mesh connections across browser tabs. StudySphere streams crystal-clear HD display, video, and audio directly between participants without routing media through centralized bottleneck servers.
+              </p>
+            </div>
+          </div>
+
+          {/* Split Card 2 */}
+          <div className="peerspace-split-card">
+            <div className="peerspace-split-img bg-lavender">
+              <div className="peerspace-split-img-title">/ Collaborative Dashboard</div>
+              <svg className="vector-wireframe-svg" width="200" height="150" viewBox="0 0 200 150" fill="none">
+                <rect x="55" y="25" width="90" height="110" rx="10" fill="#FFFFFF" stroke="#111827" strokeWidth="2.5" />
+                <rect x="80" y="18" width="40" height="14" rx="4" fill="#111827" />
+                <circle cx="100" cy="25" r="3" fill="#E4E0FD" />
+                <rect x="70" y="45" width="14" height="14" rx="3" fill="#E4E0FD" stroke="#111827" strokeWidth="1.8" />
+                <polyline points="73 52 76 55 82 48" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <line x1="92" y1="52" x2="130" y2="52" stroke="#111827" strokeWidth="2" strokeLinecap="round" />
+                <rect x="70" y="68" width="14" height="14" rx="3" fill="#E4E0FD" stroke="#111827" strokeWidth="1.8" />
+                <polyline points="73 75 76 78 82 71" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <line x1="92" y1="75" x2="120" y2="75" stroke="#111827" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="145" cy="105" r="26" fill="#111827" stroke="#FFFFFF" strokeWidth="3" />
+                <circle cx="145" cy="105" r="18" stroke="#C5FF4A" strokeWidth="3" strokeDasharray="80 30" />
+                <text x="145" y="109" fill="#FFFFFF" fontSize="11" fontWeight="bold" textAnchor="middle">25m</text>
+              </svg>
+            </div>
+            <div className="peerspace-split-content">
+              <h3 className="peerspace-split-heading">
+                / Study Session Sync
+              </h3>
+              <p className="peerspace-split-desc">
+                Integrated productivity tools running right underneath your video tiles. Synchronize study topics, goals, Pomodoro focus timers, and real-time collaborative notes instantly via low-latency WebSocket events.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 8-Card Bento Grid */}
+        <div className="peerspace-bento-grid" style={{ position: "relative", zIndex: 2, padding: "0 20px", marginBottom: "60px" }}>
+          {/* Card 1 */}
+          <div className="peerspace-bento-card bg-green">
+            <div className="bento-header-wrap">
+              <h3 className="bento-title">1-on-1 & Group Mesh Video</h3>
+              <p className="bento-desc">
+                Every session runs over direct peer-to-peer WebRTC connections with equal-tile video cards, crystal-clear audio, and clean room boundaries.
+              </p>
+            </div>
+            <div className="bento-vector-wrap">
+              <svg className="vector-wireframe-svg" width="140" height="120" viewBox="0 0 140 120" fill="none">
+                <circle cx="70" cy="60" r="50" stroke="#111827" strokeWidth="1.2" strokeDasharray="6 6" opacity="0.6" />
+                <circle cx="70" cy="60" r="34" stroke="#111827" strokeWidth="1.5" />
+                <circle cx="70" cy="60" r="16" fill="#111827" />
+                <line x1="70" y1="5" x2="70" y2="115" stroke="#111827" strokeWidth="1" opacity="0.4" />
+                <line x1="15" y1="60" x2="125" y2="60" stroke="#111827" strokeWidth="1" opacity="0.4" />
+                <circle cx="70" cy="60" r="4" fill="#E8F8B6" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Card 2 */}
+          <div className="peerspace-bento-card bg-lavender">
+            <div className="bento-header-wrap">
+              <h3 className="bento-title">Socket State Synchronization</h3>
+              <p className="bento-desc">
+                Persist room state, shared study topics, and collaborative notes across all connected peers so late-joiners sync instantly upon entry.
+              </p>
+            </div>
+            <div className="bento-vector-wrap">
+              <svg className="vector-wireframe-svg" width="140" height="120" viewBox="0 0 140 120" fill="none">
+                <polygon points="70,20 115,45 115,95 70,110 25,95 25,45" stroke="#111827" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.5" />
+                <line x1="70" y1="20" x2="70" y2="65" stroke="#111827" strokeWidth="1.5" />
+                <line x1="25" y1="95" x2="70" y2="65" stroke="#111827" strokeWidth="1.5" />
+                <line x1="115" y1="95" x2="70" y2="65" stroke="#111827" strokeWidth="1.5" />
+                <circle cx="70" cy="65" r="10" fill="#111827" />
+                <circle cx="70" cy="20" r="7" fill="#FFFFFF" stroke="#111827" strokeWidth="2" />
+                <circle cx="25" cy="95" r="7" fill="#FFFFFF" stroke="#111827" strokeWidth="2" />
+                <circle cx="115" cy="95" r="7" fill="#FFFFFF" stroke="#111827" strokeWidth="2" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Card 3 */}
+          <div className="peerspace-bento-card bg-lime">
+            <div className="bento-header-wrap">
+              <h3 className="bento-title">Shared Pomodoro Focus Timers</h3>
+              <p className="bento-desc">
+                Keep study sessions on track with synchronized focus and break countdowns (`Session 1 of 4`) triggering simultaneously for all.
+              </p>
+            </div>
+            <div className="bento-vector-wrap">
+              <svg className="vector-wireframe-svg" width="140" height="120" viewBox="0 0 140 120" fill="none">
+                <circle cx="70" cy="60" r="46" stroke="#111827" strokeWidth="2" />
+                <circle cx="70" cy="60" r="36" stroke="#111827" strokeWidth="1" strokeDasharray="3 5" opacity="0.5" />
+                <path d="M70 14 A46 46 0 0 1 116 60" stroke="#10B981" strokeWidth="5" strokeLinecap="round" />
+                <line x1="70" y1="60" x2="70" y2="34" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="70" y1="60" x2="88" y2="60" stroke="#111827" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="70" cy="60" r="5" fill="#111827" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Card 4 (col-span-2) */}
+          <div className="peerspace-bento-card col-span-2 bg-green">
+            <div className="bento-header-wrap">
+              <h3 className="bento-title">Low-Latency Screen Sharing & Parallel Chat</h3>
+              <p className="bento-desc">
+                Instantly share your full display screen, window, or browser tab with high frame-rate media tracks. Parallel room chat lets you drop links, equations, or code snippets without interrupting live video or audio feeds.
+              </p>
+            </div>
+            <div className="bento-vector-right">
+              <svg className="vector-wireframe-svg" width="180" height="160" viewBox="0 0 180 160" fill="none">
+                <circle cx="90" cy="80" r="65" stroke="#111827" strokeWidth="1.5" opacity="0.8" />
+                <ellipse cx="90" cy="80" rx="65" ry="24" stroke="#111827" strokeWidth="1.2" strokeDasharray="5 5" opacity="0.6" />
+                <ellipse cx="90" cy="80" rx="24" ry="65" stroke="#111827" strokeWidth="1.2" strokeDasharray="5 5" opacity="0.6" />
+                <line x1="25" y1="80" x2="155" y2="80" stroke="#111827" strokeWidth="1.2" opacity="0.5" />
+                <line x1="90" y1="15" x2="90" y2="145" stroke="#111827" strokeWidth="1.2" opacity="0.5" />
+                <circle cx="90" cy="56" r="6" fill="#111827" />
+                <circle cx="114" cy="80" r="5" fill="#FFFFFF" stroke="#111827" strokeWidth="1.5" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Card 5 */}
+          <div className="peerspace-bento-card bg-lavender">
+            <div className="bento-header-wrap">
+              <h3 className="bento-title">Real-Time Collaborative Notes</h3>
+              <p className="bento-desc">
+                Jot down equations, algorithms, or checklists collaboratively in a shared scratchpad that syncs keystroke-by-keystroke in real time.
+              </p>
+            </div>
+            <div className="bento-vector-wrap">
+              <svg className="vector-wireframe-svg" width="140" height="120" viewBox="0 0 140 120" fill="none">
+                <polygon points="70,25 120,50 70,75 20,50" stroke="#111827" strokeWidth="1.5" fill="rgba(255,255,255,0.4)" />
+                <polygon points="70,55 120,80 70,105 20,80" stroke="#111827" strokeWidth="1.2" strokeDasharray="4 4" fill="rgba(255,255,255,0.2)" />
+                <line x1="70" y1="15" x2="70" y2="110" stroke="#111827" strokeWidth="1.8" />
+                <line x1="15" y1="47.5" x2="125" y2="102.5" stroke="#111827" strokeWidth="1.2" opacity="0.5" />
+                <line x1="125" y1="47.5" x2="15" y2="102.5" stroke="#111827" strokeWidth="1.2" opacity="0.5" />
+                <circle cx="70" cy="50" r="5" fill="#111827" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Card 6 */}
+          <div className="peerspace-bento-card bg-lavender">
+            <div className="bento-header-wrap">
+              <h3 className="bento-title">Pre-Session Lobby Setup</h3>
+              <p className="bento-desc">
+                Test camera and microphone permissions, verify your local display stream, and configure your room's study goals before entering.
+              </p>
+            </div>
+            <div className="bento-vector-wrap">
+              <svg className="vector-wireframe-svg" width="140" height="120" viewBox="0 0 140 120" fill="none">
+                <rect x="20" y="25" width="100" height="70" rx="6" stroke="#111827" strokeWidth="1.8" fill="#FFFFFF" />
+                <line x1="20" y1="42" x2="120" y2="42" stroke="#111827" strokeWidth="1.5" />
+                <circle cx="30" cy="33.5" r="2.5" fill="#111827" />
+                <circle cx="38" cy="33.5" r="2.5" fill="#111827" opacity="0.5" />
+                <circle cx="46" cy="33.5" r="2.5" fill="#111827" opacity="0.3" />
+                <rect x="34" y="55" width="34" height="26" rx="3" stroke="#111827" strokeWidth="1.5" fill="#E4E0FD" />
+                <rect x="74" y="55" width="34" height="26" rx="3" stroke="#111827" strokeWidth="1.5" strokeDasharray="3 3" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Card 7 */}
+          <div className="peerspace-bento-card bg-green">
+            <div className="bento-header-wrap">
+              <h3 className="bento-title">Custom Room Links & Invites</h3>
+              <p className="bento-desc">
+                Generate memorable room codes like `/study-hall` or `/standup`. One-click copy buttons make inviting study partners effortless.
+              </p>
+            </div>
+            <div className="bento-vector-wrap">
+              <svg className="vector-wireframe-svg" width="140" height="120" viewBox="0 0 140 120" fill="none">
+                <circle cx="50" cy="60" r="32" stroke="#111827" strokeWidth="1.5" opacity="0.7" />
+                <circle cx="90" cy="60" r="32" stroke="#111827" strokeWidth="1.5" opacity="0.7" />
+                <circle cx="70" cy="42" r="32" stroke="#111827" strokeWidth="1.5" opacity="0.7" />
+                <circle cx="70" cy="78" r="32" stroke="#111827" strokeWidth="1.5" opacity="0.7" />
+                <circle cx="70" cy="60" r="6" fill="#111827" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Card 8 */}
+          <div className="peerspace-bento-card bg-lime">
+            <div className="bento-header-wrap">
+              <h3 className="bento-title">Personal Activity & Call History</h3>
+              <p className="bento-desc">
+                Track every meeting room you join, view historical timestamps, and jump right back into past sessions directly from your dashboard.
+              </p>
+            </div>
+            <div className="bento-vector-wrap">
+              <svg className="vector-wireframe-svg" width="140" height="120" viewBox="0 0 140 120" fill="none">
+                <ellipse cx="70" cy="60" rx="55" ry="22" stroke="#111827" strokeWidth="1.5" transform="rotate(-15 70 60)" />
+                <ellipse cx="70" cy="60" rx="55" ry="22" stroke="#111827" strokeWidth="1.5" strokeDasharray="6 4" transform="rotate(35 70 60)" />
+                <ellipse cx="70" cy="60" rx="55" ry="22" stroke="#111827" strokeWidth="1.5" opacity="0.6" transform="rotate(85 70 60)" />
+                <circle cx="70" cy="60" r="8" fill="#111827" />
+                <circle cx="118" cy="48" r="4" fill="#FFFFFF" stroke="#111827" strokeWidth="1.5" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Call to Action Card */}
+      <div
+        style={{
+          maxWidth: "1080px",
+          margin: "0 auto",
+          background: "#111827",
+          borderRadius: "20px",
+          padding: "48px 40px",
+          textAlign: "center",
+          color: "white",
+          boxShadow: "0 12px 30px rgba(0,0,0,0.1)",
+          position: "relative",
+          zIndex: 2,
+        }}
+      >
+        <h3 style={{ fontSize: "2rem", fontWeight: "800", marginBottom: "16px", letterSpacing: "-0.03em" }}>
+          Ready to start your first collaborative study session?
+        </h3>
+        <p style={{ color: "#9CA3AF", marginBottom: "28px", fontSize: "1.05rem" }}>
+          Join as a guest right now or log in to sync your personal activity history and notes across all devices.
+        </p>
+        <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
+          <button onClick={() => router.push("/room/study-hall")} className="btn-lime">
+            Launch Study Hall
+          </button>
+          {!isAuthenticated && (
+            <button
+              onClick={() => router.push("/auth")}
+              className="btn-outline"
+              style={{ color: "white", borderColor: "#374151", background: "transparent" }}
+            >
+              Sign Up Free
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

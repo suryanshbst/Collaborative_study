@@ -11,103 +11,118 @@ const JWT_EXPIRES_IN = "7d";
 
 // POST /api/auth/register
 router.post("/register", async (req, res) => {
-  const result = registerSchema.safeParse(req.body);
-  if (!result.success) {
-    res.status(400).json({ error: result.error.issues[0]?.message || "Invalid input" });
-    return;
+  try {
+    const result = registerSchema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ error: result.error.issues[0]?.message || "Invalid input" });
+      return;
+    }
+
+    const { username, password } = result.data;
+
+    const existing = await prisma.user.findUnique({ where: { username } });
+    if (existing) {
+      res.status(409).json({ error: "Username is already taken" });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        username,
+        password: hashedPassword,
+      },
+      select: {
+        id: true,
+        username: true,
+        createdAt: true,
+      },
+    });
+
+    const token = jwt.sign(
+      { userId: user.id, username: user.username },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN },
+    );
+
+    res.status(201).json({
+      message: "User registered successfully",
+      user,
+      token,
+    });
+  } catch (err: any) {
+    console.error("[Auth Register Error]:", err);
+    res.status(500).json({ error: "Failed to register user. Please try again." });
   }
-
-  const { username, password } = result.data;
-
-  const existing = await prisma.user.findUnique({ where: { username } });
-  if (existing) {
-    res.status(409).json({ error: "Username is already taken" });
-    return;
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const user = await prisma.user.create({
-    data: {
-      username,
-      password: hashedPassword,
-    },
-    select: {
-      id: true,
-      username: true,
-      createdAt: true,
-    },
-  });
-
-  const token = jwt.sign(
-    { userId: user.id, username: user.username },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN },
-  );
-
-  res.status(201).json({
-    message: "User registered successfully",
-    user,
-    token,
-  });
 });
 
 // POST /api/auth/login
 router.post("/login", async (req, res) => {
-  const result = loginSchema.safeParse(req.body);
-  if (!result.success) {
-    res.status(400).json({ error: result.error.issues[0]?.message || "Invalid input" });
-    return;
+  try {
+    const result = loginSchema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ error: result.error.issues[0]?.message || "Invalid input" });
+      return;
+    }
+
+    const { username, password } = result.data;
+
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) {
+      res.status(401).json({ error: "Invalid username or password" });
+      return;
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      res.status(401).json({ error: "Invalid username or password" });
+      return;
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, username: user.username },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN },
+    );
+
+    res.json({
+      message: "Login successful",
+      user: {
+        id: user.id,
+        username: user.username,
+        createdAt: user.createdAt,
+      },
+      token,
+    });
+  } catch (err: any) {
+    console.error("[Auth Login Error]:", err);
+    res.status(500).json({ error: "Failed to login. Please try again." });
   }
-
-  const { username, password } = result.data;
-
-  const user = await prisma.user.findUnique({ where: { username } });
-  if (!user) {
-    res.status(401).json({ error: "Invalid username or password" });
-    return;
-  }
-
-  const isValidPassword = await bcrypt.compare(password, user.password);
-  if (!isValidPassword) {
-    res.status(401).json({ error: "Invalid username or password" });
-    return;
-  }
-
-  const token = jwt.sign(
-    { userId: user.id, username: user.username },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN },
-  );
-
-  res.json({
-    message: "Login successful",
-    user: {
-      id: user.id,
-      username: user.username,
-      createdAt: user.createdAt,
-    },
-    token,
-  });
 });
 
 // GET /api/auth/me
 router.get("/me", authMiddleware, async (req: AuthRequest, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: req.user!.userId },
-    select: {
-      id: true,
-      username: true,
-      createdAt: true,
-    },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: {
+        id: true,
+        username: true,
+        createdAt: true,
+      },
+    });
 
-  if (!user) {
-    res.status(404).json({ error: "User not found" });
-    return;
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json({ user });
+  } catch (err: any) {
+    console.error("[Auth Me Error]:", err);
+    res.status(500).json({ error: "Failed to retrieve user profile." });
   }
-
-  res.json({ user });
 });
 
 export default router;

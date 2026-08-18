@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@repo/db/prisma": ["./packages/db/index.ts"],
+      "@repo/db": ["./packages/db/index.ts"],
+      "@repo/zod/zod": ["./packages/zod/index.ts"],
+      "@repo/zod": ["./packages/zod/index.ts"]
+    }
+  },
+  "references": [
+    { "path": "./apps/backend" },
+    { "path": "./apps/web" },
+    { "path": "./packages/db" },
+    { "path": "./packages/zod" },
+    { "path": "./packages/ui" }
+  ]
+}

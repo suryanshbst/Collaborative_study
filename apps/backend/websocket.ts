@@ -20,11 +20,16 @@ interface Client {
   roomId: string | null;
 }
 
+interface InternalRoomState extends RoomState {
+  timerStartedAt?: number | null;
+  timerInitialTimeLeft?: number;
+}
+
 // In-memory room and client state
-const rooms = new Map<string, RoomState>();
+const rooms = new Map<string, InternalRoomState>();
 const clients = new Map<WebSocket, Client>();
 
-function createDefaultRoomState(): RoomState {
+function createDefaultRoomState(): InternalRoomState {
   return {
     topic: "",
     goal: "",
@@ -38,7 +43,35 @@ function createDefaultRoomState(): RoomState {
     notes: "",
     participants: [],
     hostId: "",
+    timerStartedAt: null,
+    timerInitialTimeLeft: 25 * 60,
   };
+}
+
+// Computes exact remaining time based on server timestamp for any joining or syncing peer
+function getEffectiveRoomState(state: InternalRoomState): RoomState {
+  const copy: RoomState = {
+    topic: state.topic,
+    goal: state.goal,
+    focusDuration: state.focusDuration,
+    breakDuration: state.breakDuration,
+    sessions: state.sessions,
+    currentSession: state.currentSession,
+    phase: state.phase,
+    timeLeft: state.timeLeft,
+    isRunning: state.isRunning,
+    notes: state.notes,
+    participants: state.participants,
+    hostId: state.hostId,
+  };
+
+  if (state.isRunning && state.timerStartedAt && state.timerInitialTimeLeft !== undefined) {
+    const elapsedSeconds = Math.floor((Date.now() - state.timerStartedAt) / 1000);
+    const computedTimeLeft = Math.max(0, state.timerInitialTimeLeft - elapsedSeconds);
+    copy.timeLeft = computedTimeLeft;
+  }
+
+  return copy;
 }
 
 // Send message to all participants in a room (optionally exclude sender)
@@ -154,8 +187,8 @@ function handleMessage(
         roomState.participants.push(participant);
       }
 
-      // Sync room state to the newly joined client
-      sendTo(socket, { type: "study-sync", payload: roomState });
+      // Sync room state to the newly joined client with exact elapsed time
+      sendTo(socket, { type: "study-sync", payload: getEffectiveRoomState(roomState) });
 
       // Notify existing room participants
       broadcast(
@@ -201,32 +234,36 @@ function handleMessage(
 
     case "participant-toggle": {
       const parsed = participantToggleSchema.safeParse(data.payload);
-      if (!parsed.success) return;
+      if (!parsed.success) {
+        sendTo(socket, { type: "error", payload: "Invalid toggle data" });
+        return;
+      }
 
-      const { roomId, isCameraOn, isMicOn, isScreenSharing } = parsed.data;
+      const { roomId, userId, isCameraOn, isMicOn, isScreenSharing } =
+        parsed.data;
       const state = rooms.get(roomId);
       if (!state) return;
 
-      const participant = state.participants.find(
-        (p) => p.userId === client.userId,
-      );
-      if (participant) {
-        if (typeof isCameraOn === "boolean") participant.isCameraOn = isCameraOn;
-        if (typeof isMicOn === "boolean") participant.isMicOn = isMicOn;
-        if (typeof isScreenSharing === "boolean")
-          participant.isScreenSharing = isScreenSharing;
+      const p = state.participants.find((item) => item.userId === userId);
+      if (p) {
+        if (isCameraOn !== undefined) p.isCameraOn = isCameraOn;
+        if (isMicOn !== undefined) p.isMicOn = isMicOn;
+        if (isScreenSharing !== undefined) p.isScreenSharing = isScreenSharing;
 
-        broadcast(roomId, {
-          type: "participant-toggle",
-          payload: {
-            userId: client.userId,
-            username: client.username,
-            isCameraOn: participant.isCameraOn,
-            isMicOn: participant.isMicOn,
-            isScreenSharing: participant.isScreenSharing,
-            participants: state.participants,
+        broadcast(
+          roomId,
+          {
+            type: "participant-toggle",
+            payload: {
+              userId,
+              isCameraOn: p.isCameraOn,
+              isMicOn: p.isMicOn,
+              isScreenSharing: p.isScreenSharing,
+              participants: state.participants,
+            },
           },
-        });
+          socket,
+        );
       }
       break;
     }
@@ -238,21 +275,18 @@ function handleMessage(
         return;
       }
 
-      const { roomId, ...updates } = parsed.data;
+      const { roomId, ...updateData } = parsed.data;
       const state = rooms.get(roomId);
       if (!state) return;
 
-      Object.assign(state, updates);
-
-      if (
-        updates.focusDuration &&
-        (state.phase === "idle" || !state.isRunning) &&
-        updates.timeLeft === undefined
-      ) {
-        state.timeLeft = updates.focusDuration * 60;
+      Object.assign(state, updateData);
+      if (updateData.focusDuration !== undefined && (state.phase === "idle" || !state.isRunning)) {
+        state.timeLeft = updateData.timeLeft ?? updateData.focusDuration * 60;
+        state.timerStartedAt = null;
+        state.timerInitialTimeLeft = state.timeLeft;
       }
 
-      broadcast(roomId, { type: "study-update", payload: state });
+      broadcast(roomId, { type: "study-update", payload: getEffectiveRoomState(state) });
       break;
     }
 
@@ -268,6 +302,15 @@ function handleMessage(
       if (!state) return;
 
       Object.assign(state, timerData);
+
+      if (timerData.isRunning) {
+        state.timerStartedAt = Date.now();
+        state.timerInitialTimeLeft = timerData.timeLeft;
+      } else {
+        state.timerStartedAt = null;
+        state.timerInitialTimeLeft = timerData.timeLeft;
+      }
+
       broadcast(roomId, { type: "study-timer", payload: timerData }, socket);
       break;
     }
@@ -290,7 +333,10 @@ function handleMessage(
 
     case "chat-message": {
       const parsed = chatMessageSchema.safeParse(data.payload);
-      if (!parsed.success) return;
+      if (!parsed.success) {
+        sendTo(socket, { type: "error", payload: "Invalid chat data" });
+        return;
+      }
 
       const { roomId, message, sender } = parsed.data;
       broadcast(
@@ -322,7 +368,7 @@ function handleMessage(
       const { roomId } = (data.payload || {}) as { roomId: string };
       const state = rooms.get(roomId);
       if (state) {
-        sendTo(socket, { type: "study-sync", payload: state });
+        sendTo(socket, { type: "study-sync", payload: getEffectiveRoomState(state) });
       }
       break;
     }
@@ -371,5 +417,6 @@ function handleDisconnect(socket: WebSocket) {
     }
   }
 
+  client.roomId = null;
   clients.delete(socket);
 }

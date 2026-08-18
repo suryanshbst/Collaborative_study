@@ -1,8 +1,11 @@
 {
-  "name": "zod",
+  "name": "@repo/zod",
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "exports": {
+    "./zod": "./index.ts"
+  },
   "devDependencies": {
     "@types/bun": "^1.3.14"
   },

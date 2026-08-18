@@ -36,10 +36,10 @@ export const callEndedSchema = z.object({
 });
 
 export const historyCreateSchema = z.object({
-  topic: z.string().min(1, "Topic is required"),
-  goal: z.string().min(1, "Goal is required"),
-  duration: z.number().min(1, "Duration must be at least 1 minute"),
-  notes: z.string().optional(),
+  topic: z.string().optional().default("Study Session"),
+  goal: z.string().optional().default("Focus Goal"),
+  duration: z.number().min(0).default(5),
+  notes: z.string().nullable().optional(),
 });
 
 export const chatMessageSchema = z.object({

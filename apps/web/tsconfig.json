@@ -1,6 +1,12 @@
 {
   "extends": "@repo/typescript-config/nextjs.json",
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@repo/zod/zod": ["../../packages/zod/index.ts"],
+      "@repo/zod": ["../../packages/zod/index.ts"]
+    },
     "plugins": [
       {
         "name": "next"
