@@ -239,8 +239,8 @@ function handleMessage(
         return;
       }
 
-      const { roomId, userId, isCameraOn, isMicOn, isScreenSharing } =
-        parsed.data;
+      const { roomId, isCameraOn, isMicOn, isScreenSharing } = parsed.data;
+      const userId = client.userId;
       const state = rooms.get(roomId);
       if (!state) return;
 

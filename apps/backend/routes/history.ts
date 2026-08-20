@@ -57,12 +57,12 @@ router.post("/", async (req: AuthRequest, res) => {
 // DELETE /api/history/:id - Delete a study history entry
 router.delete("/:id", async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = Array.isArray(req.params.id) ? req.params.id[0]! : req.params.id!;
     const userId = req.user!.userId;
 
     await prisma.history.deleteMany({
       where: {
-        id: id!,
+        id,
         userId,
       },
     });
