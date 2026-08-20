@@ -70,7 +70,9 @@ export function VideoPlayer({
       <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
         <div className="flex items-center gap-2 bg-slate-950/80 backdrop-blur-md py-1 px-2.5 rounded-lg border border-white/10 text-xs font-medium text-slate-200 shadow-md">
           {isHost && (
-            <Crown className="w-3.5 h-3.5 text-amber-400" title="Room Host" />
+            <span title="Room Host">
+              <Crown className="w-3.5 h-3.5 text-amber-400" />
+            </span>
           )}
           <span>
             {username} {isLocal && "(You)"}

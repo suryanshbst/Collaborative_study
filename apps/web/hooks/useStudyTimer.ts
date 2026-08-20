@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import confetti from "canvas-confetti";
-import type { StudyPhase, RoomState } from "@/lib/types";
+import type { StudyPhase, RoomState, MessageType } from "@/lib/types";
 
 interface UseStudyTimerProps {
   roomId: string;
   isHost: boolean;
-  send: (type: string, payload: any) => void;
-  on: (type: string, handler: (payload: any) => void) => () => void;
+  send: (type: MessageType, payload: any) => void;
+  on: (type: MessageType, handler: (payload: any) => void) => () => void;
   onSessionComplete?: (stats: {
     topic: string;
     goal: string;

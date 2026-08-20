@@ -14,6 +14,7 @@ export type {
   RegisterInput,
   LoginInput,
   ApiResponse,
+  WebSocketMessage,
 } from "@repo/zod/zod";
 
 export interface User {
