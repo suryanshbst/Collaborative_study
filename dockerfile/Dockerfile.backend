@@ -28,7 +28,7 @@ COPY apps/backend ./apps/backend
 
 # Generate Prisma Client
 WORKDIR /app/packages/db
-RUN bun x prisma generate
+RUN bunx prisma generate
 
 WORKDIR /app
 
