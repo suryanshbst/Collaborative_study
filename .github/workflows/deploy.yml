@@ -55,9 +55,9 @@ jobs:
           script_stop: true
           script: |
             set -e
-            echo "=========================================="
+            echo "==========================================="
             echo "🚀 Starting StudySphere Deployment..."
-            echo "=========================================="
+            echo "==========================================="
 
             # Navigate to project directory (adjust path if needed)
             if [ -d "$HOME/collab_study" ]; then
