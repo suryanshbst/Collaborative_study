@@ -7,8 +7,8 @@ FROM oven/bun:1.3-slim AS builder
 
 WORKDIR /app
 
-# Install OpenSSL required by Prisma engine
-RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+# Install OpenSSL & curl required by Prisma engine and healthchecks
+RUN apt-get update -y && apt-get install -y openssl ca-certificates curl && rm -rf /var/lib/apt/lists/*
 
 # Copy Monorepo configuration and lockfile
 COPY package.json bun.lock turbo.json ./
