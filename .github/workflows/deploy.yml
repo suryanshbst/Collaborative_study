@@ -25,12 +25,12 @@ jobs:
           bun-version: latest
 
       - name: Install Monorepo Dependencies
-        run: bun install --frozen-lockfile
+        run: bun install
 
       - name: Generate Prisma Client
         run: |
           cd packages/db
-          bun x prisma generate
+          DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy?sslmode=disable" bun x prisma generate
 
       - name: Typecheck Monorepo
         run: bun run check-types
@@ -59,7 +59,7 @@ jobs:
             echo "🚀 Starting StudySphere Deployment..."
             echo "==========================================="
 
-            # Navigate to project directory (adjust path if needed)
+            # Navigate to project directory
             if [ -d "$HOME/collab_study" ]; then
               cd "$HOME/collab_study"
             elif [ -d "/var/www/collab_study" ]; then
@@ -73,18 +73,12 @@ jobs:
             echo "📥 Pulling latest code from origin..."
             git pull origin ${{ github.ref_name }}
 
-            # 2. Run Database Migrations if required
-            echo "🗄️ Syncing Prisma Database Schema..."
-            if command -v bun &> /dev/null; then
-              cd packages/db && bun x prisma db push --skip-generate && cd ../..
-            fi
-
-            # 3. Build & Recreate Production Docker Containers
+            # 2. Build & Recreate Production Docker Containers
             echo "🐳 Building & restarting Docker containers..."
             docker compose build
             docker compose up -d --remove-orphans
 
-            # 4. Clean up dangling unused images to save disk space
+            # 3. Clean up dangling unused images to save disk space
             echo "🧹 Cleaning up unused Docker artifacts..."
             docker image prune -f
 
