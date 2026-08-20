@@ -16,7 +16,7 @@ COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY apps/web/package.json ./apps/web/
 
 # Install Monorepo dependencies
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # 2. Builder Stage
 FROM base AS builder

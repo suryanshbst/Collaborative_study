@@ -19,7 +19,7 @@ COPY packages/zod/package.json ./packages/zod/
 COPY apps/backend/package.json ./apps/backend/
 
 # Install Monorepo dependencies
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Copy Source Code
 COPY packages/db ./packages/db
