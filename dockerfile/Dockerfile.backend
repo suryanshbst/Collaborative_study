@@ -21,14 +21,15 @@ COPY apps/backend/package.json ./apps/backend/
 # Install Monorepo dependencies
 RUN bun install
 
-# Copy Source Code
+# Copy Source Code (untouched)
 COPY packages/db ./packages/db
 COPY packages/zod ./packages/zod
 COPY apps/backend ./apps/backend
 
-# Generate Prisma Client
+# Generate Prisma Client (provide dummy DATABASE_URL solely for build-time code generation)
 WORKDIR /app/packages/db
-RUN bunx prisma generate
+ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+RUN bun x prisma generate
 
 WORKDIR /app
 
