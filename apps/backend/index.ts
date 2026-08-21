@@ -50,7 +50,7 @@ app.use(
 
 // WebSocket connection handler
 wss.on("connection", (socket, req) => {
-  const url = new URL(req.url || "/", "http://localhost" , || "ec2-98-82-153-41.compute-1.amazonaws.com");
+  const url = new URL(req.url || "/", "http://localhost");
   const userId = url.searchParams.get("userId") || `guest-${Date.now()}`;
   const username = url.searchParams.get("username") || "Student";
 
