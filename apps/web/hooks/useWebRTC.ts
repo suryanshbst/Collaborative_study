@@ -271,7 +271,7 @@ export function useWebRTC({
   }, []);
 
   // Controls: Toggle Camera
-  const toggleCamera = useCallback(() => {
+  const toggleCamera = useCallback(async () => {
     if (localStreamRef.current) {
       const videoTrack = localStreamRef.current.getVideoTracks()[0];
       if (videoTrack) {
@@ -281,12 +281,35 @@ export function useWebRTC({
           roomId,
           isCameraOn: videoTrack.enabled,
         });
+        return;
       }
     }
-  }, [roomId, send]);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: isMicOn,
+      });
+      localStreamRef.current = stream;
+      setLocalStream(stream);
+      setIsCameraOn(true);
+      peerConnections.current.forEach((pc) => {
+        stream.getTracks().forEach((track) => {
+          pc.addTrack(track, stream);
+        });
+      });
+      send("participant-toggle", {
+        roomId,
+        isCameraOn: true,
+      });
+    } catch (err) {
+      console.warn("[WebRTC] Could not toggle camera:", err);
+      setIsCameraOn((prev) => !prev);
+    }
+  }, [isMicOn, roomId, send]);
 
   // Controls: Toggle Mic
-  const toggleMic = useCallback(() => {
+  const toggleMic = useCallback(async () => {
     if (localStreamRef.current) {
       const audioTrack = localStreamRef.current.getAudioTracks()[0];
       if (audioTrack) {
@@ -296,9 +319,32 @@ export function useWebRTC({
           roomId,
           isMicOn: audioTrack.enabled,
         });
+        return;
       }
     }
-  }, [roomId, send]);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: isCameraOn,
+        audio: true,
+      });
+      localStreamRef.current = stream;
+      setLocalStream(stream);
+      setIsMicOn(true);
+      peerConnections.current.forEach((pc) => {
+        stream.getTracks().forEach((track) => {
+          pc.addTrack(track, stream);
+        });
+      });
+      send("participant-toggle", {
+        roomId,
+        isMicOn: true,
+      });
+    } catch (err) {
+      console.warn("[WebRTC] Could not toggle mic:", err);
+      setIsMicOn((prev) => !prev);
+    }
+  }, [isCameraOn, roomId, send]);
 
   // Controls: Toggle Screen Sharing
   const toggleScreenShare = useCallback(async () => {
