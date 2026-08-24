@@ -78,7 +78,11 @@ jobs:
             docker compose build
             docker compose up -d --remove-orphans
 
-            # 3. Clean up dangling unused images to save disk space
+            # 3. Synchronize database tables
+            echo "🗄️ Syncing database schema..."
+            docker compose exec -T backend bun x prisma db push || true
+
+            # 4. Clean up dangling unused images to save disk space
             echo "🧹 Cleaning up unused Docker artifacts..."
             docker image prune -f
 

@@ -12,11 +12,22 @@ const connectionString = rawUrl
   .replace(/\?&/g, "?")
   .replace(/\?$/, "");
 
+const isSslRequired =
+  connectionString.includes("sslmode=require") ||
+  connectionString.includes("sslmode=verify-full") ||
+  connectionString.includes("sslmode=verify-ca") ||
+  connectionString.includes("neon.tech") ||
+  connectionString.includes("supabase.co") ||
+  connectionString.includes("pooler.supabase.com") ||
+  connectionString.includes("rds.amazonaws.com") ||
+  (process.env.NODE_ENV === "production" &&
+    !connectionString.includes("sslmode=disable") &&
+    !connectionString.includes("localhost") &&
+    !connectionString.includes("127.0.0.1"));
+
 const pool = new Pool({
   connectionString,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: isSslRequired ? { rejectUnauthorized: false } : false,
   connectionTimeoutMillis: 15000,
   idleTimeoutMillis: 30000,
   max: 10,
