@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { WS_BASE_URL } from "@/lib/api";
+import { getWsBaseUrl, WS_BASE_URL } from "@/lib/api";
 import type { MessageType, WebSocketMessage } from "@/lib/types";
 
 type MessageHandler = (payload: any) => void;
@@ -36,7 +36,8 @@ export function useSocket(userId: string, username: string) {
     }
 
     try {
-      const url = `${WS_BASE_URL}?userId=${encodeURIComponent(userIdRef.current)}&username=${encodeURIComponent(usernameRef.current)}`;
+      const baseUrl = getWsBaseUrl() || WS_BASE_URL;
+      const url = `${baseUrl}?userId=${encodeURIComponent(userIdRef.current)}&username=${encodeURIComponent(usernameRef.current)}`;
       const ws = new WebSocket(url);
       socketRef.current = ws;
 
