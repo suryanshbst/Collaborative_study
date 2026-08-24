@@ -45,6 +45,26 @@ export function useWebRTC({
     let active = true;
 
     async function initMedia() {
+      if (
+        typeof window !== "undefined" &&
+        !window.isSecureContext &&
+        window.location.hostname !== "localhost" &&
+        window.location.hostname !== "127.0.0.1"
+      ) {
+        console.warn(
+          "[WebRTC] Insecure Context Detected: Camera/Mic permissions are blocked by browsers on plain HTTP over IP. Use HTTPS or enable chrome://flags/#unsafely-treat-insecure-origin-as-secure",
+        );
+      }
+
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        console.warn(
+          "[WebRTC] navigator.mediaDevices.getUserMedia is unavailable in this browser context (requires HTTPS or localhost).",
+        );
+        setIsCameraOn(false);
+        setIsMicOn(false);
+        return;
+      }
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -59,7 +79,10 @@ export function useWebRTC({
         localStreamRef.current = stream;
         setLocalStream(stream);
       } catch (err) {
-        console.warn("[WebRTC] Could not access camera/mic with high quality, falling back to basic audio/video", err);
+        console.warn(
+          "[WebRTC] Could not access camera/mic with high quality, falling back to basic audio/video",
+          err,
+        );
         try {
           const fallbackStream = await navigator.mediaDevices.getUserMedia({
             video: true,
@@ -70,7 +93,10 @@ export function useWebRTC({
             setLocalStream(fallbackStream);
           }
         } catch (fallbackErr) {
-          console.warn("[WebRTC] Camera/mic permissions not granted:", fallbackErr);
+          console.warn(
+            "[WebRTC] Camera/mic permissions not granted:",
+            fallbackErr,
+          );
           setIsCameraOn(false);
           setIsMicOn(false);
         }

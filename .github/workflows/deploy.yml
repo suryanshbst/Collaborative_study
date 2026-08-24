@@ -27,6 +27,16 @@ jobs:
             echo "Pulling latest code..."
             git pull origin main
 
+            DOMAIN="98.82.153.41.sslip.io"
+            if [ ! -f "certbot/conf/live/$DOMAIN/fullchain.pem" ]; then
+              echo "Creating initial SSL placeholder..."
+              mkdir -p "certbot/conf/live/$DOMAIN" certbot/www
+              openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+                -keyout "certbot/conf/live/$DOMAIN/privkey.pem" \
+                -out "certbot/conf/live/$DOMAIN/fullchain.pem" \
+                -subj "/CN=$DOMAIN"
+            fi
+
             echo "Deploying containers..."
             docker compose down
             docker compose build
@@ -35,4 +45,8 @@ jobs:
             echo "Syncing database schema..."
             docker compose exec -T backend bun x prisma db push || true
 
-            echo "Deployment complete!"
+            echo "Requesting Let's Encrypt SSL certificate..."
+            docker compose run --rm --entrypoint "certbot certonly --webroot --webroot-path=/var/www/certbot --email admin@$DOMAIN --agree-tos --no-eff-email -d $DOMAIN --non-interactive" certbot || true
+            docker compose exec -T nginx nginx -s reload || true
+
+            echo "Deployment complete on https://$DOMAIN!"
