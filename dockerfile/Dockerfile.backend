@@ -1,43 +1,22 @@
-# ==========================================
-# StudySphere Backend Dockerfile (Production)
-# Multi-stage build with Bun & Prisma
-# ==========================================
-
-FROM oven/bun:1.3-slim AS builder
+FROM oven/bun
 
 WORKDIR /app
 
-# Install OpenSSL & curl required by Prisma engine and healthchecks
-RUN apt-get update -y && apt-get install -y openssl ca-certificates curl && rm -rf /var/lib/apt/lists/*
-
-# Copy Monorepo configuration and lockfile
 COPY package.json bun.lock turbo.json ./
+COPY packages/db/package.json ./packages/db/package.json
+COPY packages/zod/package.json ./packages/zod/package.json
+COPY apps/backend/package.json ./apps/backend/package.json
 
-# Copy Package definitions
-COPY packages/db/package.json ./packages/db/
-COPY packages/zod/package.json ./packages/zod/
-COPY apps/backend/package.json ./apps/backend/
-
-# Install Monorepo dependencies
 RUN bun install
 
-# Copy Source Code (untouched)
-COPY packages/db ./packages/db
-COPY packages/zod ./packages/zod
+COPY packages ./packages
 COPY apps/backend ./apps/backend
 
-# Generate Prisma Client (provide dummy DATABASE_URL solely for build-time code generation)
 WORKDIR /app/packages/db
-ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable"
 RUN bun x prisma generate
 
 WORKDIR /app
 
-# Set Production Environment
-ENV NODE_ENV=production
-ENV PORT=8000
-
 EXPOSE 8000
 
-# Start Express + WebSocket Server
 CMD ["bun", "run", "apps/backend/index.ts"]
