@@ -234,6 +234,7 @@ export default function RoomPage({ params }: RoomPageProps) {
     send("join-room", {
       roomId,
       username: username.trim() || "Student",
+      userId: currentUserId,
     });
 
     if (!existingRoomInfo) {
@@ -769,32 +770,33 @@ export default function RoomPage({ params }: RoomPageProps) {
                 </div>
 
                 {/* Remote Peers */}
-                {Array.from(remoteStreams.keys()).map((peerId) => {
-                  const peerInfo = getParticipantForPeer(peerId);
-                  const peerName = peerInfo?.username || `Student (${peerId.substring(0, 5)})`;
-                  return (
-                    <div key={peerId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "14px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <div style={{ width: "38px", height: "38px", borderRadius: "50%", background: "#3B82F6", color: "#FFFFFF", fontWeight: "800", fontSize: "0.95rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {peerName.charAt(0).toUpperCase()}
+                {participants
+                  .filter((p) => p.userId !== currentUserId)
+                  .map((peer) => {
+                    const peerName = peer.username || `Student (${peer.userId.substring(0, 5)})`;
+                    return (
+                      <div key={peer.userId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "14px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <div style={{ width: "38px", height: "38px", borderRadius: "50%", background: "#3B82F6", color: "#FFFFFF", fontWeight: "800", fontSize: "0.95rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            {peerName.charAt(0).toUpperCase()}
+                          </div>
+                          <div style={{ textAlign: "left" }}>
+                            <div style={{ fontSize: "0.92rem", fontWeight: "700", color: "#111827", display: "flex", alignItems: "center", gap: "6px" }}>
+                              {peerName}
+                              {peer.isHost && <Crown size={13} color="#F59E0B" />}
+                            </div>
+                            <div style={{ fontSize: "0.75rem", color: "#6B7280" }}>
+                              {peer.isScreenSharing ? "Sharing Screen" : "Active in Room"}
+                            </div>
+                          </div>
                         </div>
-                        <div style={{ textAlign: "left" }}>
-                          <div style={{ fontSize: "0.92rem", fontWeight: "700", color: "#111827", display: "flex", alignItems: "center", gap: "6px" }}>
-                            {peerName}
-                            {peerInfo?.isHost && <Crown size={13} color="#F59E0B" />}
-                          </div>
-                          <div style={{ fontSize: "0.75rem", color: "#6B7280" }}>
-                            {peerInfo?.isScreenSharing ? "Sharing Screen" : "Active in Room"}
-                          </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          {peer.isCameraOn !== false ? <Video size={16} color="#10B981" /> : <VideoOff size={16} color="#EF4444" />}
+                          {peer.isMicOn !== false ? <Mic size={16} color="#10B981" /> : <MicOff size={16} color="#EF4444" />}
                         </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        {peerInfo?.isCameraOn !== false ? <Video size={16} color="#10B981" /> : <VideoOff size={16} color="#EF4444" />}
-                        {peerInfo?.isMicOn !== false ? <Mic size={16} color="#10B981" /> : <MicOff size={16} color="#EF4444" />}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
           </div>
@@ -859,9 +861,9 @@ export default function RoomPage({ params }: RoomPageProps) {
           className="studyVideoGrid"
           style={{
             gridTemplateColumns:
-              remoteStreams.size === 0
+              participants.filter((p) => p.userId !== currentUserId).length === 0
                 ? "minmax(360px, 760px)"
-                : `repeat(auto-fit, minmax(${remoteStreams.size >= 2 ? "320px" : "440px"}, 1fr))`,
+                : `repeat(auto-fit, minmax(${participants.filter((p) => p.userId !== currentUserId).length >= 2 ? "320px" : "440px"}, 1fr))`,
             justifyContent: "center",
             margin: "0 auto",
             width: "100%",
@@ -879,22 +881,23 @@ export default function RoomPage({ params }: RoomPageProps) {
           />
 
           {/* Remote Peer Tiles */}
-          {Array.from(remoteStreams.entries()).map(([peerId, stream]) => {
-            const peerInfo = getParticipantForPeer(peerId);
-            const peerName = peerInfo?.username || `Partner (${peerId.substring(0, 5)})`;
-            return (
-              <RoomVideoTile
-                key={peerId}
-                stream={stream}
-                username={peerName}
-                isLocal={false}
-                isHost={peerInfo?.isHost}
-                isCameraOn={peerInfo?.isCameraOn !== false}
-                isMicOn={peerInfo?.isMicOn !== false}
-                isScreenSharing={peerInfo?.isScreenSharing}
-              />
-            );
-          })}
+          {participants
+            .filter((p) => p.userId !== currentUserId)
+            .map((peer) => {
+              const stream = remoteStreams.get(peer.userId) || null;
+              return (
+                <RoomVideoTile
+                  key={peer.userId}
+                  stream={stream}
+                  username={peer.username || "Study Partner"}
+                  isLocal={false}
+                  isHost={peer.isHost}
+                  isCameraOn={peer.isCameraOn !== false && !!stream}
+                  isMicOn={peer.isMicOn !== false}
+                  isScreenSharing={peer.isScreenSharing}
+                />
+              );
+            })}
         </div>
 
         {/* Productivity 3-Card Dashboard (Bottom Half) */}

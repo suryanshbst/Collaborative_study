@@ -143,9 +143,10 @@ function handleMessage(
 
   switch (data.type) {
     case "join-room": {
-      const { roomId, username } = (data.payload || {}) as {
+      const { roomId, username, userId } = (data.payload || {}) as {
         roomId: string;
         username?: string;
+        userId?: string;
       };
       if (!roomId) {
         sendTo(socket, { type: "error", payload: "Room ID is required" });
@@ -154,6 +155,9 @@ function handleMessage(
 
       if (username) {
         client.username = username;
+      }
+      if (userId) {
+        client.userId = userId;
       }
 
       client.roomId = roomId;
