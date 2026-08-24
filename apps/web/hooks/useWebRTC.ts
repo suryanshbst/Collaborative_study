@@ -87,6 +87,24 @@ export function useWebRTC({
     };
   }, []);
 
+  // Synchronize local tracks to all existing peer connections whenever localStream updates
+  useEffect(() => {
+    if (!localStream) return;
+    localStreamRef.current = localStream;
+
+    peerConnections.current.forEach((pc) => {
+      const senders = pc.getSenders();
+      localStream.getTracks().forEach((track) => {
+        const sender = senders.find((s) => s.track && s.track.kind === track.kind);
+        if (sender) {
+          sender.replaceTrack(track);
+        } else {
+          pc.addTrack(track, localStream);
+        }
+      });
+    });
+  }, [localStream]);
+
   // 2. Create peer connection
   const createPeerConnection = useCallback(
     (targetUserId: string) => {

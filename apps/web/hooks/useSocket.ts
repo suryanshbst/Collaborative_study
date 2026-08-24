@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { WS_BASE_URL } from "@/lib/api";
+import { getWsBaseUrl } from "@/lib/api";
 import type { MessageType, WebSocketMessage } from "@/lib/types";
 
 type MessageHandler = (payload: any) => void;
@@ -16,12 +16,14 @@ export function useSocket(userId: string, username: string) {
   const usernameRef = useRef(username);
 
   useEffect(() => {
+    const prevUserId = userIdRef.current;
     userIdRef.current = userId;
-  }, [userId]);
-
-  useEffect(() => {
     usernameRef.current = username;
-  }, [username]);
+
+    if (prevUserId && userId && prevUserId !== userId && socketRef.current) {
+      socketRef.current.close();
+    }
+  }, [userId, username]);
 
   const connect = useCallback(() => {
     if (!userIdRef.current) return;
@@ -36,7 +38,8 @@ export function useSocket(userId: string, username: string) {
     }
 
     try {
-      const url = `${WS_BASE_URL}?userId=${encodeURIComponent(userIdRef.current)}&username=${encodeURIComponent(usernameRef.current)}`;
+      const baseUrl = getWsBaseUrl();
+      const url = `${baseUrl}?userId=${encodeURIComponent(userIdRef.current)}&username=${encodeURIComponent(usernameRef.current)}`;
       const ws = new WebSocket(url);
       socketRef.current = ws;
 
@@ -60,7 +63,7 @@ export function useSocket(userId: string, username: string) {
       ws.onclose = () => {
         setIsConnected(false);
         if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = setTimeout(connect, 3000);
+        reconnectTimeoutRef.current = setTimeout(connect, 2000);
       };
 
       ws.onerror = () => {
@@ -80,7 +83,7 @@ export function useSocket(userId: string, username: string) {
         socketRef.current.close();
       }
     };
-  }, [connect]);
+  }, [connect, userId]);
 
   const send = useCallback((type: MessageType, payload: unknown) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {

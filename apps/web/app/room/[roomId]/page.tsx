@@ -42,14 +42,9 @@ export default function RoomPage({ params }: RoomPageProps) {
   const resolvedParams = use(params);
   const roomId = decodeURIComponent(resolvedParams.roomId);
   const router = useRouter();
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, setGuestUser } = useAuth();
 
-  // Protect study room: redirect unauthenticated users to /auth with redirect query param
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push(`/auth?redirect=/room/${encodeURIComponent(roomId)}`);
-    }
-  }, [authLoading, isAuthenticated, roomId, router]);
+  const [guestNameInput, setGuestNameInput] = useState("");
 
   // Lobby vs In-Call View
   const [inLobby, setInLobby] = useState(true);
@@ -83,7 +78,19 @@ export default function RoomPage({ params }: RoomPageProps) {
   // Room state
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [isHost, setIsHost] = useState(false);
-  const currentUserId = user?.id || `user-${Date.now()}`;
+
+  const [guestId] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("studysphere_guest_id");
+      if (saved) return saved;
+      const newId = `user-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      sessionStorage.setItem("studysphere_guest_id", newId);
+      return newId;
+    }
+    return `user-${Date.now()}`;
+  });
+
+  const currentUserId = user?.id || guestId;
 
   // Keep username synced with AuthContext
   useEffect(() => {
@@ -266,9 +273,33 @@ export default function RoomPage({ params }: RoomPageProps) {
     setChatMessage("");
   };
 
-  const handleCopyLink = () => {
-    if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href);
+  const handleCopyLink = async () => {
+    if (typeof window === "undefined") return;
+    const shareUrl = window.location.href;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = shareUrl;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopyToast(true);
+      setTimeout(() => setCopyToast(false), 2500);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = shareUrl;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
       setCopyToast(true);
       setTimeout(() => setCopyToast(false), 2500);
     }
@@ -295,27 +326,62 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   const effectivePeerCount = Math.max(participants.length, 1 + remoteStreams.size);
 
-  // Authentication Guard: Prevent unauthenticated users from accessing the study room lobby or call
+  // Authentication & Guest Entry Screen
   if (authLoading || !isAuthenticated) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#F8F9FA" }}>
         <Navbar />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
-          <div className="ramain-auth-card" style={{ textAlign: "center", maxWidth: "440px" }}>
+          <div className="ramain-auth-card" style={{ textAlign: "center", maxWidth: "460px", width: "100%" }}>
             <div className="vector-pulse-dot" style={{ margin: "0 auto 16px", width: "14px", height: "14px" }} />
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.4rem", fontWeight: "800", marginBottom: "8px" }}>
-              Verifying Study Account...
+              Join Study Room
             </h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.92rem", marginBottom: "20px" }}>
-              Please sign in or create an account to enter study room <strong>/{roomId}</strong>.
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.92rem", marginBottom: "24px" }}>
+              You were invited to study room <strong style={{ color: "var(--text-primary)" }}>/{roomId}</strong>.
             </p>
+
+            {/* Quick Guest Join */}
+            <div style={{ background: "#F3F4F6", padding: "16px", borderRadius: "14px", marginBottom: "20px", textAlign: "left", border: "1px solid var(--border-light)" }}>
+              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "var(--text-secondary)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Enter Your Display Name
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Alex"
+                value={guestNameInput}
+                onChange={(e) => setGuestNameInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && guestNameInput.trim()) {
+                    setGuestUser(guestNameInput.trim());
+                  }
+                }}
+                className="input-ramain"
+                style={{ width: "100%", marginBottom: "12px", background: "#FFFFFF" }}
+              />
+              <button
+                type="button"
+                onClick={() => setGuestUser(guestNameInput.trim() || "Peer")}
+                className="btn-lime"
+                style={{ width: "100%", padding: "12px", fontSize: "0.95rem" }}
+              >
+                Join as Guest →
+              </button>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "16px 0" }}>
+              <div style={{ flex: 1, height: "1px", background: "var(--border-light)" }} />
+              <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: "600" }}>OR</span>
+              <div style={{ flex: 1, height: "1px", background: "var(--border-light)" }} />
+            </div>
+
             <button
               type="button"
               onClick={() => router.push(`/auth?redirect=/room/${encodeURIComponent(roomId)}`)}
-              className="btn-lime"
+              className="btn-secondary"
               style={{ width: "100%", padding: "12px", fontSize: "0.95rem" }}
             >
-              Sign In to Continue →
+              Sign In with Account
             </button>
           </div>
         </div>

@@ -54,7 +54,29 @@ export function SessionSummaryModal({ data, onClose, onExit }: SessionSummaryMod
 
   const copyNotes = () => {
     if (!data.notes) return;
-    navigator.clipboard?.writeText(data.notes);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        navigator.clipboard.writeText(data.notes);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = data.notes;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = data.notes;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
   };

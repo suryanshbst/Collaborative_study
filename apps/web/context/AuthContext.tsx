@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         token,
-        isAuthenticated: !!token && !!user,
+        isAuthenticated: (!!token && !!user) || (!!user && user.id.startsWith("guest-")),
         isLoading,
         login,
         register,
