@@ -208,6 +208,17 @@ export default function HomePage() {
         <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "28px", flexWrap: "wrap" }}>
           <button
             type="button"
+            onClick={() => {
+              const uniqueCode = `room-${Math.random().toString(36).substring(2, 8)}`;
+              router.push(`/room/${uniqueCode}`);
+            }}
+            className="btn-lime"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+          >
+            + New Instant Meeting
+          </button>
+          <button
+            type="button"
             onClick={() => router.push("/history")}
             className="btn-outline"
             style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}

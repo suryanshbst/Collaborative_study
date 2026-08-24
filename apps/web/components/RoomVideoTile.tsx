@@ -30,7 +30,8 @@ export function RoomVideoTile({
     const video = videoRef.current;
     if (!video) return;
 
-    if (stream && isCameraOn) {
+    const shouldShowVideo = !!stream && (isCameraOn || isScreenSharing);
+    if (shouldShowVideo) {
       if (video.srcObject !== stream) {
         video.srcObject = stream;
       }
@@ -38,7 +39,7 @@ export function RoomVideoTile({
     } else {
       video.srcObject = null;
     }
-  }, [stream, isCameraOn]);
+  }, [stream, isCameraOn, isScreenSharing]);
 
   // Bind remote audio stream
   useEffect(() => {
@@ -94,14 +95,14 @@ export function RoomVideoTile({
         style={{
           width: "100%",
           height: "100%",
-          objectFit: "cover",
-          display: isCameraOn && stream ? "block" : "none",
+          objectFit: isScreenSharing ? "contain" : "cover",
+          display: (isCameraOn || isScreenSharing) && stream ? "block" : "none",
           transform: isLocal && !isScreenSharing ? "scaleX(-1)" : "none",
         }}
       />
 
-      {/* Avatar Fallback when camera is off */}
-      {(!isCameraOn || !stream) && (
+      {/* Avatar Fallback when camera and screen share are off */}
+      {(!(isCameraOn || isScreenSharing) || !stream) && (
         <div
           style={{
             width: "100%",
