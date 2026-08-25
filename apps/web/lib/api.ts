@@ -1,24 +1,30 @@
 import axios from "axios";
 
 export const getApiBaseUrl = () => {
-  if (process.env.NEXT_PUBLIC_BACKEND_URL) {
-    return process.env.NEXT_PUBLIC_BACKEND_URL;
-  }
   if (typeof window !== "undefined") {
+    if (
+      process.env.NEXT_PUBLIC_BACKEND_URL &&
+      !process.env.NEXT_PUBLIC_BACKEND_URL.includes("localhost")
+    ) {
+      return process.env.NEXT_PUBLIC_BACKEND_URL;
+    }
     return window.location.origin;
   }
-  return "http://localhost:8000";
+  return process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 };
 
 export const getWsBaseUrl = () => {
-  if (process.env.NEXT_PUBLIC_WS_URL) {
-    return process.env.NEXT_PUBLIC_WS_URL;
-  }
   if (typeof window !== "undefined") {
+    if (
+      process.env.NEXT_PUBLIC_WS_URL &&
+      !process.env.NEXT_PUBLIC_WS_URL.includes("localhost")
+    ) {
+      return process.env.NEXT_PUBLIC_WS_URL;
+    }
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    return `${protocol}//${window.location.host}`;
+    return `${protocol}//${window.location.host}/ws`;
   }
-  return "ws://localhost:8000";
+  return process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws";
 };
 
 export const API_BASE_URL = getApiBaseUrl();

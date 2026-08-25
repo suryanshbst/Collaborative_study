@@ -48,6 +48,13 @@ export function useWebRTC({
     let active = true;
 
     async function initMedia() {
+      if (typeof window === "undefined" || !navigator?.mediaDevices?.getUserMedia) {
+        console.warn("[WebRTC] navigator.mediaDevices.getUserMedia is unavailable in this context (requires HTTPS or localhost).");
+        setIsCameraOn(false);
+        setIsMicOn(false);
+        return;
+      }
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -64,6 +71,7 @@ export function useWebRTC({
       } catch (err) {
         console.warn("[WebRTC] Could not access camera/mic with high quality, falling back to basic audio/video", err);
         try {
+          if (!navigator?.mediaDevices?.getUserMedia) return;
           const fallbackStream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: true,
@@ -292,7 +300,7 @@ export function useWebRTC({
   }, []);
 
   // Controls: Toggle Camera
-  const toggleCamera = useCallback(() => {
+  const toggleCamera = useCallback(async () => {
     if (localStreamRef.current) {
       const videoTrack = localStreamRef.current.getVideoTracks()[0];
       if (videoTrack) {
@@ -302,12 +310,25 @@ export function useWebRTC({
           roomId,
           isCameraOn: videoTrack.enabled,
         });
+        return;
       }
     }
-  }, [roomId, send]);
+
+    if (typeof window !== "undefined" && navigator?.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: isMicOn });
+        localStreamRef.current = stream;
+        setLocalStream(stream);
+        setIsCameraOn(true);
+        send("participant-toggle", { roomId, isCameraOn: true });
+      } catch (err) {
+        console.warn("[WebRTC] Could not enable camera:", err);
+      }
+    }
+  }, [isMicOn, roomId, send]);
 
   // Controls: Toggle Mic
-  const toggleMic = useCallback(() => {
+  const toggleMic = useCallback(async () => {
     if (localStreamRef.current) {
       const audioTrack = localStreamRef.current.getAudioTracks()[0];
       if (audioTrack) {
@@ -317,9 +338,22 @@ export function useWebRTC({
           roomId,
           isMicOn: audioTrack.enabled,
         });
+        return;
       }
     }
-  }, [roomId, send]);
+
+    if (typeof window !== "undefined" && navigator?.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isCameraOn });
+        localStreamRef.current = stream;
+        setLocalStream(stream);
+        setIsMicOn(true);
+        send("participant-toggle", { roomId, isMicOn: true });
+      } catch (err) {
+        console.warn("[WebRTC] Could not enable microphone:", err);
+      }
+    }
+  }, [isCameraOn, roomId, send]);
 
   // Controls: Toggle Screen Sharing
   const toggleScreenShare = useCallback(async () => {
