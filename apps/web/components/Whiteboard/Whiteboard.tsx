@@ -3,6 +3,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { WhiteboardToolbar } from "./WhiteboardToolbar";
 import { useWhiteboard } from "@/hooks/useWhiteboard";
+import { exportWhiteboardCanvasAsImage } from "@/lib/exportCanvasImage";
 import type { ToolType, CanvasElement, Point, WhiteboardProps } from "./types";
 
 export function Whiteboard({
@@ -337,24 +338,12 @@ export function Whiteboard({
 
   // Download canvas image
   const handleDownload = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    // Create a temporary export canvas with dark background
-    const exportCanvas = document.createElement("canvas");
-    exportCanvas.width = canvas.width;
-    exportCanvas.height = canvas.height;
-    const expCtx = exportCanvas.getContext("2d");
-    if (!expCtx) return;
-
-    expCtx.fillStyle = "#0B132B";
-    expCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-    elements.forEach((el) => drawElement(expCtx, el));
-
-    const link = document.createElement("a");
-    link.download = `StudySphere_Whiteboard_${roomId}_${Date.now()}.png`;
-    link.href = exportCanvas.toDataURL("image/png");
-    link.click();
+    exportWhiteboardCanvasAsImage({
+      elements,
+      topic: roomId,
+      roomId,
+      date: new Date().toLocaleDateString(),
+    });
   };
 
   return (
