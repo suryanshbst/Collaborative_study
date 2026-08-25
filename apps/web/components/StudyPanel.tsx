@@ -496,6 +496,7 @@ export function StudyPanel({
               Notes
             </button>
           </div>
+        </div>
 
         {/* Whiteboard Canvas Container (Kept mounted to preserve drawing state) */}
         <div
