@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Trash2, Palette, FileText } from "lucide-react";
 import { Whiteboard } from "@/components/Whiteboard";
 
