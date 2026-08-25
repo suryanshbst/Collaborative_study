@@ -11,6 +11,7 @@ import {
   BookOpen,
   FileText,
 } from "lucide-react";
+import { exportNotesAsImage } from "@/lib/exportNotesImage";
 
 export interface SummaryData {
   topic?: string;
@@ -40,16 +41,15 @@ export function SessionSummaryModal({ data, onClose, onExit }: SessionSummaryMod
   };
 
   const downloadNotes = () => {
-    const content = `# StudySphere Study Session Notes\n\n**Topic:** ${data.topic || "—"}\n**Goal:** ${data.goal || "—"}\n**Date:** ${new Date().toLocaleDateString()}\n**Pomodoros Completed:** ${data.completedSessions || 0} / ${data.totalSessions || 4}\n\n---\n\n## Shared Notes\n\n${data.notes || "No notes recorded."}\n`;
-    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${(data.topic || "StudySphere").replace(/[^a-zA-Z0-9]/g, "_")}_Study_Notes.md`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    exportNotesAsImage({
+      topic: data.topic || "StudySphere",
+      goal: data.goal || "Focus Goal",
+      notes: data.notes || "No notes recorded.",
+      date: new Date().toLocaleDateString(),
+      completedSessions: data.completedSessions || 0,
+      totalSessions: data.totalSessions || 4,
+      durationMin: Math.max(1, Math.round((data.totalStudyMs || 60000) / 60000)),
+    });
   };
 
   const copyNotes = () => {
@@ -188,7 +188,7 @@ export function SessionSummaryModal({ data, onClose, onExit }: SessionSummaryMod
                 }}
               >
                 <Download size={13} />
-                Download (.md)
+                Download (PNG Image)
               </button>
             </div>
           </div>

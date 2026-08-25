@@ -880,6 +880,7 @@ export default function RoomPage({ params }: RoomPageProps) {
         {/* Productivity 3-Card Dashboard (Bottom Half) */}
         {showStudyPanel && (
           <StudyPanel
+            roomId={roomId}
             topic={studyTopic || topic}
             goal={studyGoal || goal}
             focusDuration={studyFocusDuration || focusDuration}
@@ -890,6 +891,8 @@ export default function RoomPage({ params }: RoomPageProps) {
             timeLeft={timeLeft}
             isRunning={isRunning}
             notes={notes}
+            send={send}
+            on={on}
             onUpdateConfig={(config) => {
               if (config.topic !== undefined) setTopic(config.topic);
               if (config.goal !== undefined) setGoal(config.goal);

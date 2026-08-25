@@ -20,6 +20,7 @@ import {
   ArrowLeft,
   Sparkles,
 } from "lucide-react";
+import { exportNotesAsImage } from "@/lib/exportNotesImage";
 
 interface LocalSavedNote {
   id?: number;
@@ -146,16 +147,15 @@ export default function HistoryPage() {
   };
 
   const handleDownloadNote = (item: LocalSavedNote) => {
-    const content = `# StudySphere Study Session Notes\n\n**Topic:** ${item.topic || "—"}\n**Goal:** ${item.goal || "—"}\n**Date:** ${item.date || new Date().toLocaleDateString()}\n**Pomodoros Completed:** ${item.completedSessions || 0} / ${item.totalSessions || 4}\n\n---\n\n## Shared Notes\n\n${item.notes || "No notes recorded."}\n`;
-    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${(item.topic || "StudySphere").replace(/[^a-zA-Z0-9]/g, "_")}_Notes.md`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    exportNotesAsImage({
+      topic: item.topic || "StudySphere",
+      goal: item.goal || "Focus Goal",
+      notes: item.notes || "No notes recorded.",
+      date: item.date || new Date().toLocaleDateString(),
+      completedSessions: item.completedSessions || 0,
+      totalSessions: item.totalSessions || 4,
+      durationMin: item.durationMin || 25,
+    });
   };
 
   return (
@@ -382,7 +382,7 @@ export default function HistoryPage() {
                       style={{ flex: 1, background: "var(--accent-lime, #C5FF4A)", color: "#111827", border: "none", padding: "8px 12px", borderRadius: "10px", fontWeight: "700", fontSize: "0.84rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
                     >
                       <Download size={14} />
-                      Download
+                      Download PNG
                     </button>
                     <button
                       type="button"

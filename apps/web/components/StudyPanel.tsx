@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  Trash2,
-} from "lucide-react";
+import { Trash2, Palette, FileText } from "lucide-react";
+import { Whiteboard } from "@/components/Whiteboard";
 
 interface StudyPanelProps {
+  roomId?: string;
   topic: string;
   goal: string;
   focusDuration: number;
@@ -16,6 +16,8 @@ interface StudyPanelProps {
   timeLeft: number;
   isRunning: boolean;
   notes: string;
+  send?: (type: string, payload: any) => void;
+  on?: (type: string, handler: (payload: any) => void) => () => void;
   onUpdateConfig: (config: {
     topic?: string;
     goal?: string;
@@ -29,6 +31,7 @@ interface StudyPanelProps {
 }
 
 export function StudyPanel({
+  roomId = "study-hall",
   topic,
   goal,
   focusDuration,
@@ -39,10 +42,13 @@ export function StudyPanel({
   timeLeft,
   isRunning,
   notes,
+  send = () => {},
+  on = () => () => {},
   onUpdateConfig,
   onTimerAction,
   onNotesChange,
 }: StudyPanelProps) {
+  const [activeTab, setActiveTab] = useState<"whiteboard" | "notes">("whiteboard");
   const [editMode, setEditMode] = useState(false);
   const [editTopic, setEditTopic] = useState(topic || "");
   const [editGoal, setEditGoal] = useState(goal || "");
@@ -357,12 +363,58 @@ export function StudyPanel({
         </div>
       </div>
 
-      {/* ---- Card 3: Shared Realtime Collaborative Notes ---- */}
-      <div className="productivityCard">
-        <div className="productivityCardHeader">
-          <h3 className="productivityCardTitle">Shared Notes</h3>
+      {/* ---- Card 3: Collaborative Whiteboard & Shared Notes ---- */}
+      <div className="productivityCard" style={{ display: "flex", flexDirection: "column" }}>
+        <div className="productivityCardHeader" style={{ marginBottom: "10px" }}>
+          {/* Tab Switcher */}
+          <div style={{ display: "flex", background: "rgba(255, 255, 255, 0.06)", padding: "3px", borderRadius: "10px", gap: "2px" }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab("whiteboard")}
+              style={{
+                background: activeTab === "whiteboard" ? "var(--accent-lime, #C5FF4A)" : "transparent",
+                color: activeTab === "whiteboard" ? "#0F172A" : "#94A3B8",
+                border: "none",
+                borderRadius: "8px",
+                padding: "5px 12px",
+                fontSize: "0.78rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <Palette size={13} />
+              Shared Canvas
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("notes")}
+              style={{
+                background: activeTab === "notes" ? "var(--accent-lime, #C5FF4A)" : "transparent",
+                color: activeTab === "notes" ? "#0F172A" : "#94A3B8",
+                border: "none",
+                borderRadius: "8px",
+                padding: "5px 12px",
+                fontSize: "0.78rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <FileText size={13} />
+              Notes
+            </button>
+          </div>
+
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            {notes && (
+            {activeTab === "notes" && notes && (
               <button
                 type="button"
                 onClick={() => {
@@ -396,17 +448,25 @@ export function StudyPanel({
           </div>
         </div>
 
-        <textarea
-          className="notesArea"
-          style={{ flex: 1, minHeight: "190px" }}
-          value={notes}
-          onChange={(e) => handleNotesInput(e.target.value)}
-          placeholder="Type notes collaboratively with your friend — synced in real time across both screens..."
-        />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.74rem", color: "#9CA3AF", margin: 0 }}>
-          <span>✨ Live keystroke sync via Socket.IO</span>
-          <span>No save required</span>
-        </div>
+        {activeTab === "whiteboard" ? (
+          <div style={{ flex: 1, minHeight: "340px", display: "flex", flexDirection: "column" }}>
+            <Whiteboard roomId={roomId} send={send} on={on} />
+          </div>
+        ) : (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            <textarea
+              className="notesArea"
+              style={{ flex: 1, minHeight: "260px" }}
+              value={notes}
+              onChange={(e) => handleNotesInput(e.target.value)}
+              placeholder="Type notes collaboratively with your friend — synced in real time across both screens..."
+            />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.74rem", color: "#9CA3AF", marginTop: "8px" }}>
+              <span>✨ Live keystroke sync via WebSockets</span>
+              <span>No save required</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

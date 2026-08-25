@@ -9,6 +9,7 @@ import {
   studyUpdateSchema,
   studyTimerSchema,
   studyNotesSchema,
+  whiteboardUpdateSchema,
   chatMessageSchema,
   participantToggleSchema,
 } from "@repo/zod/zod";
@@ -41,6 +42,7 @@ function createDefaultRoomState(roomId = ""): InternalRoomState {
     timeLeft: 25 * 60,
     isRunning: false,
     notes: "",
+    whiteboard: "[]",
     participants: [],
     hostId: "",
     timerStartedAt: null,
@@ -61,6 +63,7 @@ function getEffectiveRoomState(state: InternalRoomState): RoomState {
     timeLeft: state.timeLeft,
     isRunning: state.isRunning,
     notes: state.notes,
+    whiteboard: state.whiteboard || "[]",
     participants: state.participants,
     hostId: state.hostId,
   };
@@ -332,6 +335,47 @@ function handleMessage(
 
       state.notes = notes;
       broadcast(roomId, { type: "study-notes", payload: { notes } }, socket);
+      break;
+    }
+
+    case "whiteboard-update": {
+      const parsed = whiteboardUpdateSchema.safeParse(data.payload);
+      if (!parsed.success) {
+        sendTo(socket, { type: "error", payload: "Invalid whiteboard data" });
+        return;
+      }
+
+      const { roomId, elements } = parsed.data;
+      const state = rooms.get(roomId);
+      if (!state) return;
+
+      state.whiteboard = elements;
+      broadcast(
+        roomId,
+        {
+          type: "whiteboard-update",
+          payload: { roomId, elements, senderId: client.userId },
+        },
+        socket,
+      );
+      break;
+    }
+
+    case "whiteboard-clear": {
+      const roomId = (data.payload as any)?.roomId;
+      if (!roomId) return;
+      const state = rooms.get(roomId);
+      if (!state) return;
+
+      state.whiteboard = "[]";
+      broadcast(
+        roomId,
+        {
+          type: "whiteboard-clear",
+          payload: { roomId, senderId: client.userId },
+        },
+        socket,
+      );
       break;
     }
 

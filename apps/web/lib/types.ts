@@ -7,6 +7,7 @@ export type {
   StudyUpdateInput,
   StudyTimerInput,
   StudyNotesInput,
+  WhiteboardUpdateInput,
   CallEndedInput,
   HistoryCreateInput,
   ChatMessageInput,

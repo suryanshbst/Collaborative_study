@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { FileText, Download, Trash2, Check, Sparkles } from "lucide-react";
+import { exportNotesAsImage } from "@/lib/exportNotesImage";
 
 interface NotesEditorProps {
   initialNotes: string;
@@ -41,13 +42,10 @@ export function NotesEditor({
   };
 
   const handleDownload = () => {
-    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${topic.toLowerCase().replace(/\s+/g, "-")}-notes.md`;
-    link.click();
-    URL.revokeObjectURL(url);
+    exportNotesAsImage({
+      topic,
+      notes: content || "No notes recorded.",
+    });
   };
 
   const handleClear = () => {

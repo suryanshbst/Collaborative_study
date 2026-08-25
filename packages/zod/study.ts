@@ -56,6 +56,12 @@ export const participantToggleSchema = z.object({
   isScreenSharing: z.boolean().optional(),
 });
 
+export const whiteboardUpdateSchema = z.object({
+  roomId: z.string(),
+  elements: z.string(),
+  senderId: z.string().optional(),
+});
+
 export type StudyUpdateInput = z.infer<typeof studyUpdateSchema>;
 export type StudyTimerInput = z.infer<typeof studyTimerSchema>;
 export type StudyNotesInput = z.infer<typeof studyNotesSchema>;
@@ -63,3 +69,4 @@ export type CallEndedInput = z.infer<typeof callEndedSchema>;
 export type HistoryCreateInput = z.infer<typeof historyCreateSchema>;
 export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
 export type ParticipantToggleInput = z.infer<typeof participantToggleSchema>;
+export type WhiteboardUpdateInput = z.infer<typeof whiteboardUpdateSchema>;

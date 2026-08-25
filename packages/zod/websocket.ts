@@ -10,6 +10,8 @@ export type MessageType =
   | "study-timer"
   | "study-sync"
   | "study-notes"
+  | "whiteboard-update"
+  | "whiteboard-clear"
   | "call-ended"
   | "room-state-request"
   | "chat-message"
@@ -40,6 +42,7 @@ export interface RoomState {
   timeLeft: number;
   isRunning: boolean;
   notes: string;
+  whiteboard?: string;
   participants: Participant[];
   hostId: string;
 }
