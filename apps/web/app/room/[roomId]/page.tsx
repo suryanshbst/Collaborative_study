@@ -44,8 +44,6 @@ export default function RoomPage({ params }: RoomPageProps) {
   const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading, setGuestUser } = useAuth();
 
-  const [guestNameInput, setGuestNameInput] = useState("");
-
   // Lobby vs In-Call View
   const [inLobby, setInLobby] = useState(true);
 
@@ -230,10 +228,14 @@ export default function RoomPage({ params }: RoomPageProps) {
   };
 
   const handleStartSession = () => {
+    const finalUsername = username.trim() || "Student";
+    if (!user) {
+      setGuestUser(finalUsername);
+    }
     setInLobby(false);
     send("join-room", {
       roomId,
-      username: username.trim() || "Student",
+      username: finalUsername,
       userId: currentUserId,
     });
 
@@ -327,69 +329,6 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   const effectivePeerCount = Math.max(participants.length, 1 + remoteStreams.size);
 
-  // Authentication & Guest Entry Screen
-  if (authLoading || !isAuthenticated) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#F8F9FA" }}>
-        <Navbar />
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
-          <div className="ramain-auth-card" style={{ textAlign: "center", maxWidth: "460px", width: "100%" }}>
-            <div className="vector-pulse-dot" style={{ margin: "0 auto 16px", width: "14px", height: "14px" }} />
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.4rem", fontWeight: "800", marginBottom: "8px" }}>
-              Join Study Room
-            </h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.92rem", marginBottom: "24px" }}>
-              You were invited to study room <strong style={{ color: "var(--text-primary)" }}>/{roomId}</strong>.
-            </p>
-
-            {/* Quick Guest Join */}
-            <div style={{ background: "#F3F4F6", padding: "16px", borderRadius: "14px", marginBottom: "20px", textAlign: "left", border: "1px solid var(--border-light)" }}>
-              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", color: "var(--text-secondary)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                Enter Your Display Name
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Alex"
-                value={guestNameInput}
-                onChange={(e) => setGuestNameInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && guestNameInput.trim()) {
-                    setGuestUser(guestNameInput.trim());
-                  }
-                }}
-                className="input-ramain"
-                style={{ width: "100%", marginBottom: "12px", background: "#FFFFFF" }}
-              />
-              <button
-                type="button"
-                onClick={() => setGuestUser(guestNameInput.trim() || "Peer")}
-                className="btn-lime"
-                style={{ width: "100%", padding: "12px", fontSize: "0.95rem" }}
-              >
-                Join as Guest →
-              </button>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "16px 0" }}>
-              <div style={{ flex: 1, height: "1px", background: "var(--border-light)" }} />
-              <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: "600" }}>OR</span>
-              <div style={{ flex: 1, height: "1px", background: "var(--border-light)" }} />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => router.push(`/auth?redirect=/room/${encodeURIComponent(roomId)}`)}
-              className="btn-secondary"
-              style={{ width: "100%", padding: "12px", fontSize: "0.95rem" }}
-            >
-              Sign In with Account
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // ==========================================
   // 1. LOBBY VIEW (Pre-Session Setup)
   // ==========================================
@@ -422,10 +361,48 @@ export default function RoomPage({ params }: RoomPageProps) {
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: "2.2rem", fontWeight: "800", marginBottom: "8px", letterSpacing: "-0.03em" }}>
               Study Room <span className="lime-highlight">Lobby</span>
             </h1>
-            <p style={{ color: "var(--text-secondary)", marginBottom: "24px", fontSize: "0.98rem", maxWidth: "460px", margin: "0 auto 24px", lineHeight: "1.5", textAlign: "center" }}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "16px", fontSize: "0.98rem", maxWidth: "460px", margin: "0 auto 16px", lineHeight: "1.5", textAlign: "center" }}>
               Prepare your audio/video and configure study session parameters before<br />
               joining <code style={{ background: "#E5E7EB", padding: "2px 6px", borderRadius: "6px" }}>/{roomId}</code>.
             </p>
+
+            {!isAuthenticated && (
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  background: "#FFFFFF",
+                  border: "1px solid var(--border-light)",
+                  borderRadius: "14px",
+                  padding: "6px 14px",
+                  marginBottom: "20px",
+                  fontSize: "0.85rem",
+                  color: "#4B5563",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+                }}
+              >
+                <span className="vector-pulse-dot" />
+                <span>Joining as Guest</span>
+                <span style={{ color: "#D1D5DB" }}>•</span>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/auth?redirect=/room/${encodeURIComponent(roomId)}`)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#059669",
+                    fontWeight: "700",
+                    cursor: "pointer",
+                    padding: 0,
+                    textDecoration: "underline",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  Sign in with account
+                </button>
+              </div>
+            )}
 
             {/* Stable Video Preview Frame */}
             <LobbyVideoPreview
