@@ -92,7 +92,7 @@ export function useStudyTimer({
   on,
   onSessionComplete,
 }: UseStudyTimerProps) {
-  const [topic, setTopic] = useState("Focus Study Session");
+  const [topic, setTopic] = useState(roomId || "Focus Study Session");
   const [goal, setGoal] = useState("Achieve daily goals");
   const [focusDuration, setFocusDuration] = useState(25); // minutes
   const [breakDuration, setBreakDuration] = useState(5); // minutes

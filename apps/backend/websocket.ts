@@ -29,9 +29,9 @@ interface InternalRoomState extends RoomState {
 const rooms = new Map<string, InternalRoomState>();
 const clients = new Map<WebSocket, Client>();
 
-function createDefaultRoomState(): InternalRoomState {
+function createDefaultRoomState(roomId = ""): InternalRoomState {
   return {
-    topic: "",
+    topic: roomId,
     goal: "",
     focusDuration: 25,
     breakDuration: 5,
@@ -165,7 +165,7 @@ function handleMessage(
       let isFirst = false;
       if (!rooms.has(roomId)) {
         isFirst = true;
-        const state = createDefaultRoomState();
+        const state = createDefaultRoomState(roomId);
         state.hostId = client.userId;
         rooms.set(roomId, state);
       }

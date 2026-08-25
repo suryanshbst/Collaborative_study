@@ -51,7 +51,7 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   // User details & Lobby configs
   const [username, setUsername] = useState(user?.username || "Student");
-  const [topic, setTopic] = useState("");
+  const [topic, setTopic] = useState(roomId);
   const [goal, setGoal] = useState("");
   const [focusDuration, setFocusDuration] = useState(25);
   const [sessions, setSessions] = useState(4);
@@ -240,7 +240,7 @@ export default function RoomPage({ params }: RoomPageProps) {
     if (!existingRoomInfo) {
       setIsHost(true);
       updateStudyConfig({
-        topic: topic.trim() || "Focus Study Session",
+        topic: topic.trim() || roomId,
         goal: goal.trim() || "Achieve daily goals",
         focusDuration,
         breakDuration: Math.round(focusDuration / 5) || 5,
@@ -309,7 +309,7 @@ export default function RoomPage({ params }: RoomPageProps) {
   const handleEndCall = () => {
     const elapsedMs = Math.max(60000, (focusDuration * 60 - timeLeft) * 1000);
     const data: SummaryData = {
-      topic: topic || "Focus Study Session",
+      topic: topic || roomId,
       goal: goal || "Achieve daily goals",
       completedSessions: currentSession,
       totalSessions: sessions,
@@ -645,7 +645,7 @@ export default function RoomPage({ params }: RoomPageProps) {
         {/* Center Active Topic / Goal / Session Capsule */}
         <div className="headerStatusCapsule">
           <span className="headerStatusSection">
-            📚 <strong>{topic || "Focus Study Session"}</strong>
+            📚 <strong>{topic || roomId}</strong>
           </span>
           <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
           <span className="headerStatusSection">
@@ -1037,7 +1037,7 @@ export default function RoomPage({ params }: RoomPageProps) {
             if (summaryData) {
               try {
                 await api.post("/api/history", {
-                  topic: summaryData.topic || "Focus Study Session",
+                  topic: summaryData.topic || roomId,
                   goal: summaryData.goal || "Achieve daily goals",
                   duration: Math.max(1, Math.round((summaryData.totalStudyMs || 60000) / 60000)),
                   notes: summaryData.notes || null,
@@ -1049,7 +1049,7 @@ export default function RoomPage({ params }: RoomPageProps) {
                 const existing = JSON.parse(localStorage.getItem("studysphere_saved_notes") || "[]");
                 existing.unshift({
                   id: Date.now(),
-                  topic: summaryData.topic || "Focus Study Session",
+                  topic: summaryData.topic || roomId,
                   goal: summaryData.goal || "Achieve daily goals",
                   notes: summaryData.notes || "",
                   date: new Date().toLocaleDateString(),

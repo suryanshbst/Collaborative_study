@@ -57,7 +57,7 @@ export function StudyPanel({
 
   const handleSaveConfig = () => {
     onUpdateConfig({
-      topic: editTopic.trim() || "Focus Study Session",
+      topic: editTopic.trim() || topic || "Study Session",
       goal: editGoal.trim() || "Achieve daily goals",
       sessions: Number(editSessions) || 4,
     });
@@ -126,7 +126,7 @@ export function StudyPanel({
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", textAlign: "left" }}>
             <div className="infoCardRow">
               <span className="infoCardRowLabel">SHARED TOPIC</span>
-              <span className="infoCardRowValue">{topic || "Focus Study Session"}</span>
+              <span className="infoCardRowValue">{topic || "Study Session"}</span>
             </div>
 
             <div className="infoCardRow">
@@ -165,7 +165,7 @@ export function StudyPanel({
                 }}
                 value={editTopic}
                 onChange={(e) => setEditTopic(e.target.value)}
-                placeholder="e.g. Focus Study Session"
+                placeholder="e.g. Data Structures & Algorithms"
               />
             </div>
             <div>
