@@ -180,7 +180,7 @@ export function Whiteboard({
     }
   }, [drawElement, elements]);
 
-  // Adjust canvas resolution to container size
+  // Adjust canvas resolution to container size & visibility changes
   useEffect(() => {
     const handleResize = () => {
       const canvas = canvasRef.current;
@@ -188,17 +188,31 @@ export function Whiteboard({
       if (!canvas || !container) return;
 
       const rect = container.getBoundingClientRect();
-      const width = Math.max(300, rect.width);
-      const height = isFullscreen ? window.innerHeight - 130 : 340;
-
-      canvas.width = width;
-      canvas.height = height;
-      redrawCanvas();
+      if (rect.width > 0) {
+        const height = isFullscreen ? window.innerHeight - 130 : 340;
+        if (canvas.width !== rect.width || canvas.height !== height) {
+          canvas.width = rect.width;
+          canvas.height = height;
+        }
+        redrawCanvas();
+      }
     };
 
     handleResize();
+
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined" && containerRef.current) {
+      ro = new ResizeObserver(() => {
+        handleResize();
+      });
+      ro.observe(containerRef.current);
+    }
+
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (ro) ro.disconnect();
+    };
   }, [isFullscreen, redrawCanvas]);
 
   useEffect(() => {

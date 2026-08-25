@@ -16,13 +16,23 @@ export function useWhiteboard({
   send,
   on,
 }: UseWhiteboardProps) {
+  const storageKey = `studysphere_wb_${roomId}`;
+
   const [elements, setElements] = useState<CanvasElement[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
     if (initialElements) {
       try {
-        return JSON.parse(initialElements);
-      } catch {
-        return [];
-      }
+        const parsed = JSON.parse(initialElements);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
     }
     return [];
   });
@@ -73,12 +83,18 @@ export function useWhiteboard({
           setHistoryIndex((idx) => idx + 1);
         }
 
+        if (typeof window !== "undefined") {
+          try {
+            sessionStorage.setItem(storageKey, JSON.stringify(next));
+          } catch {}
+        }
+
         isLocalUpdateRef.current = true;
         broadcastElements(next);
         return next;
       });
     },
-    [broadcastElements, historyIndex],
+    [broadcastElements, historyIndex, storageKey],
   );
 
   // Undo action
@@ -88,14 +104,24 @@ export function useWhiteboard({
       setHistoryIndex((idx) => idx - 1);
       setElements(prevElements);
       elementsRef.current = prevElements;
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem(storageKey, JSON.stringify(prevElements));
+        } catch {}
+      }
       broadcastElements(prevElements);
     } else if (historyIndex === 0) {
       setHistoryIndex(-1);
       setElements([]);
       elementsRef.current = [];
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.removeItem(storageKey);
+        } catch {}
+      }
       broadcastElements([]);
     }
-  }, [broadcastElements, history, historyIndex]);
+  }, [broadcastElements, history, historyIndex, storageKey]);
 
   // Redo action
   const redo = useCallback(() => {
@@ -104,15 +130,25 @@ export function useWhiteboard({
       setHistoryIndex((idx) => idx + 1);
       setElements(nextElements);
       elementsRef.current = nextElements;
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem(storageKey, JSON.stringify(nextElements));
+        } catch {}
+      }
       broadcastElements(nextElements);
     }
-  }, [broadcastElements, history, historyIndex]);
+  }, [broadcastElements, history, historyIndex, storageKey]);
 
   // Clear canvas
   const clearCanvas = useCallback(() => {
     updateElements([]);
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.removeItem(storageKey);
+      } catch {}
+    }
     send("whiteboard-clear", { roomId });
-  }, [roomId, send, updateElements]);
+  }, [roomId, send, storageKey, updateElements]);
 
   // Listen for peer whiteboard events
   useEffect(() => {
@@ -124,6 +160,11 @@ export function useWhiteboard({
           if (Array.isArray(parsed)) {
             setElements(parsed);
             elementsRef.current = parsed;
+            if (typeof window !== "undefined") {
+              try {
+                sessionStorage.setItem(storageKey, JSON.stringify(parsed));
+              } catch {}
+            }
           }
         } catch (err) {
           console.warn("[Whiteboard] Error parsing remote whiteboard update:", err);
@@ -134,6 +175,11 @@ export function useWhiteboard({
     const unsubClear = on("whiteboard-clear", () => {
       setElements([]);
       elementsRef.current = [];
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.removeItem(storageKey);
+        } catch {}
+      }
     });
 
     const unsubSync = on("study-sync", (state: any) => {
@@ -143,6 +189,11 @@ export function useWhiteboard({
           if (Array.isArray(parsed) && parsed.length > 0) {
             setElements(parsed);
             elementsRef.current = parsed;
+            if (typeof window !== "undefined") {
+              try {
+                sessionStorage.setItem(storageKey, JSON.stringify(parsed));
+              } catch {}
+            }
           }
         } catch {}
       }

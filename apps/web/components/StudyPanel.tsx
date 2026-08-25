@@ -55,11 +55,21 @@ export function StudyPanel({
   const [editSessions, setEditSessions] = useState(sessions || 4);
   const [syncStatus, setSyncStatus] = useState("Synced");
 
+  // Local notes state with debounce to prevent typing lag and websocket flooding
+  const [localNotes, setLocalNotes] = useState(notes || "");
+  const debounceNotesRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     setEditTopic(topic || "");
     setEditGoal(goal || "");
     setEditSessions(sessions || 4);
   }, [topic, goal, sessions]);
+
+  useEffect(() => {
+    if (notes !== localNotes && !debounceNotesRef.current) {
+      setLocalNotes(notes || "");
+    }
+  }, [notes]);
 
   const handleSaveConfig = () => {
     onUpdateConfig({
@@ -71,9 +81,18 @@ export function StudyPanel({
   };
 
   const handleNotesInput = (val: string) => {
+    setLocalNotes(val);
     setSyncStatus("Syncing...");
-    onNotesChange(val);
-    setTimeout(() => setSyncStatus("Synced"), 500);
+
+    if (debounceNotesRef.current) {
+      clearTimeout(debounceNotesRef.current);
+    }
+
+    debounceNotesRef.current = setTimeout(() => {
+      onNotesChange(val);
+      setSyncStatus("Synced");
+      debounceNotesRef.current = null;
+    }, 250);
   };
 
   const formatTime = (seconds: number) => {
@@ -448,25 +467,38 @@ export function StudyPanel({
           </div>
         </div>
 
-        {activeTab === "whiteboard" ? (
-          <div style={{ flex: 1, minHeight: "340px", display: "flex", flexDirection: "column" }}>
-            <Whiteboard roomId={roomId} send={send} on={on} />
+        {/* Whiteboard Canvas Container (Kept mounted to preserve drawing state) */}
+        <div
+          style={{
+            display: activeTab === "whiteboard" ? "flex" : "none",
+            flex: 1,
+            minHeight: "340px",
+            flexDirection: "column",
+          }}
+        >
+          <Whiteboard roomId={roomId} send={send} on={on} />
+        </div>
+
+        {/* Notes Textarea Container */}
+        <div
+          style={{
+            display: activeTab === "notes" ? "flex" : "none",
+            flex: 1,
+            flexDirection: "column",
+          }}
+        >
+          <textarea
+            className="notesArea"
+            style={{ flex: 1, minHeight: "260px" }}
+            value={localNotes}
+            onChange={(e) => handleNotesInput(e.target.value)}
+            placeholder="Type notes collaboratively with your friend — synced in real time across both screens..."
+          />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.74rem", color: "#9CA3AF", marginTop: "8px" }}>
+            <span>✨ Live keystroke sync via WebSockets</span>
+            <span>No save required</span>
           </div>
-        ) : (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-            <textarea
-              className="notesArea"
-              style={{ flex: 1, minHeight: "260px" }}
-              value={notes}
-              onChange={(e) => handleNotesInput(e.target.value)}
-              placeholder="Type notes collaboratively with your friend — synced in real time across both screens..."
-            />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.74rem", color: "#9CA3AF", marginTop: "8px" }}>
-              <span>✨ Live keystroke sync via WebSockets</span>
-              <span>No save required</span>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

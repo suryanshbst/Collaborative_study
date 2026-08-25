@@ -158,6 +158,19 @@ export default function HistoryPage() {
     });
   };
 
+  const handleDownloadMarkdownNote = (item: LocalSavedNote) => {
+    const content = `# StudySphere Study Session Notes\n\n**Topic:** ${item.topic || "—"}\n**Goal:** ${item.goal || "—"}\n**Date:** ${item.date || new Date().toLocaleDateString()}\n**Pomodoros Completed:** ${item.completedSessions || 0} / ${item.totalSessions || 4}\n\n---\n\n## Shared Notes\n\n${item.notes || "No notes recorded."}\n`;
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${(item.topic || "StudySphere").replace(/[^a-zA-Z0-9]/g, "_")}_Notes.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div style={{ minHeight: "100vh", paddingBottom: "80px", background: "#F8F9FA" }}>
       {/* Unified Navbar */}
@@ -375,22 +388,32 @@ export default function HistoryPage() {
                   </div>
 
                   {/* Individual Note Action Bar */}
-                  <div style={{ display: "flex", gap: "8px", paddingTop: "14px", borderTop: "1px solid #F1F5F9", alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: "6px", paddingTop: "14px", borderTop: "1px solid #F1F5F9", alignItems: "center" }}>
                     <button
                       type="button"
                       onClick={() => handleDownloadNote(item)}
-                      style={{ flex: 1, background: "var(--accent-lime, #C5FF4A)", color: "#111827", border: "none", padding: "8px 12px", borderRadius: "10px", fontWeight: "700", fontSize: "0.84rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                      style={{ flex: 1, background: "var(--accent-lime, #C5FF4A)", color: "#111827", border: "none", padding: "8px 8px", borderRadius: "10px", fontWeight: "700", fontSize: "0.80rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}
+                      title="Download formatted PNG image"
                     >
-                      <Download size={14} />
-                      Download PNG
+                      <Download size={13} />
+                      PNG
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadMarkdownNote(item)}
+                      style={{ flex: 1, background: "#1E293B", color: "#FFFFFF", border: "none", padding: "8px 8px", borderRadius: "10px", fontWeight: "700", fontSize: "0.80rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}
+                      title="Download Markdown (.md) file"
+                    >
+                      <FileText size={13} />
+                      .MD
                     </button>
                     <button
                       type="button"
                       onClick={() => handleCopyNote(item.notes || "", idx)}
                       disabled={!item.notes}
-                      style={{ background: "#F1F5F9", color: item.notes ? "#334155" : "#94A3B8", border: "none", padding: "8px 12px", borderRadius: "10px", fontWeight: "600", fontSize: "0.84rem", cursor: item.notes ? "pointer" : "not-allowed", display: "flex", alignItems: "center", gap: "5px" }}
+                      style={{ background: "#F1F5F9", color: item.notes ? "#334155" : "#94A3B8", border: "none", padding: "8px 10px", borderRadius: "10px", fontWeight: "600", fontSize: "0.80rem", cursor: item.notes ? "pointer" : "not-allowed", display: "flex", alignItems: "center", gap: "4px" }}
                     >
-                      {copiedId === idx ? <Check size={14} color="#10B981" /> : <Copy size={14} />}
+                      {copiedId === idx ? <Check size={13} color="#10B981" /> : <Copy size={13} />}
                       {copiedId === idx ? "Copied" : "Copy"}
                     </button>
                     <button
@@ -401,10 +424,10 @@ export default function HistoryPage() {
                         background: "#FEE2E2",
                         color: "#EF4444",
                         border: "1px solid #FECACA",
-                        padding: "8px 10px",
+                        padding: "8px 9px",
                         borderRadius: "10px",
                         fontWeight: "600",
-                        fontSize: "0.84rem",
+                        fontSize: "0.80rem",
                         cursor: "pointer",
                         display: "flex",
                         alignItems: "center",
@@ -412,7 +435,7 @@ export default function HistoryPage() {
                         transition: "all 0.2s ease",
                       }}
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>

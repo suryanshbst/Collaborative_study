@@ -52,6 +52,19 @@ export function SessionSummaryModal({ data, onClose, onExit }: SessionSummaryMod
     });
   };
 
+  const downloadMarkdownNotes = () => {
+    const content = `# StudySphere Study Session Notes\n\n**Topic:** ${data.topic || "—"}\n**Goal:** ${data.goal || "—"}\n**Date:** ${new Date().toLocaleDateString()}\n**Pomodoros Completed:** ${data.completedSessions || 0} / ${data.totalSessions || 4}\n\n---\n\n## Shared Notes\n\n${data.notes || "No notes recorded."}\n`;
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${(data.topic || "StudySphere").replace(/[^a-zA-Z0-9]/g, "_")}_Study_Notes.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const copyNotes = () => {
     if (!data.notes) return;
     try {
@@ -167,7 +180,7 @@ export function SessionSummaryModal({ data, onClose, onExit }: SessionSummaryMod
                 }}
               >
                 {copied ? <Check size={13} color="#10B981" /> : <Copy size={13} />}
-                {copied ? "Copied!" : "Copy Text"}
+                {copied ? "Copied!" : "Copy"}
               </button>
               <button
                 type="button"
@@ -175,7 +188,7 @@ export function SessionSummaryModal({ data, onClose, onExit }: SessionSummaryMod
                 style={{
                   background: "var(--accent-lime, #C5FF4A)",
                   border: "1px solid #B6F03C",
-                  padding: "4px 12px",
+                  padding: "4px 10px",
                   borderRadius: "8px",
                   fontSize: "0.78rem",
                   fontWeight: "700",
@@ -186,9 +199,32 @@ export function SessionSummaryModal({ data, onClose, onExit }: SessionSummaryMod
                   gap: "4px",
                   boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
                 }}
+                title="Download formatted PNG image"
               >
                 <Download size={13} />
-                Download (PNG Image)
+                PNG
+              </button>
+              <button
+                type="button"
+                onClick={downloadMarkdownNotes}
+                style={{
+                  background: "#1E293B",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  padding: "4px 10px",
+                  borderRadius: "8px",
+                  fontSize: "0.78rem",
+                  fontWeight: "700",
+                  color: "#FFFFFF",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                }}
+                title="Download Markdown (.md) file"
+              >
+                <FileText size={13} />
+                .MD
               </button>
             </div>
           </div>
