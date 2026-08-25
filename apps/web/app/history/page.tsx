@@ -21,12 +21,14 @@ import {
   Sparkles,
 } from "lucide-react";
 import { exportNotesAsImage } from "@/lib/exportNotesImage";
+import { exportWhiteboardCanvasAsImage } from "@/lib/exportCanvasImage";
 
 interface LocalSavedNote {
   id?: number;
   topic?: string;
   goal?: string;
   notes?: string;
+  whiteboard?: string;
   date?: string;
   durationMin?: number;
   completedSessions?: number;
@@ -146,15 +148,13 @@ export default function HistoryPage() {
     setTimeout(() => setCopiedId(null), 2500);
   };
 
-  const handleDownloadNote = (item: LocalSavedNote) => {
-    exportNotesAsImage({
+  const handleDownloadCanvas = (item: LocalSavedNote) => {
+    exportWhiteboardCanvasAsImage({
+      elements: item.whiteboard,
       topic: item.topic || "StudySphere",
-      goal: item.goal || "Focus Goal",
-      notes: item.notes || "No notes recorded.",
+      roomId: item.topic || "study-hall",
       date: item.date || new Date().toLocaleDateString(),
-      completedSessions: item.completedSessions || 0,
-      totalSessions: item.totalSessions || 4,
-      durationMin: item.durationMin || 25,
+      notesFallback: item.notes || "",
     });
   };
 
@@ -391,12 +391,12 @@ export default function HistoryPage() {
                   <div style={{ display: "flex", gap: "6px", paddingTop: "14px", borderTop: "1px solid #F1F5F9", alignItems: "center" }}>
                     <button
                       type="button"
-                      onClick={() => handleDownloadNote(item)}
+                      onClick={() => handleDownloadCanvas(item)}
                       style={{ flex: 1, background: "var(--accent-lime, #C5FF4A)", color: "#111827", border: "none", padding: "8px 8px", borderRadius: "10px", fontWeight: "700", fontSize: "0.80rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}
-                      title="Download formatted PNG image"
+                      title="Download Whiteboard Canvas Drawing as high-res PNG image"
                     >
                       <Download size={13} />
-                      PNG
+                      Canvas (PNG)
                     </button>
                     <button
                       type="button"

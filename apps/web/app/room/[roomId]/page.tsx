@@ -310,6 +310,11 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   const handleEndCall = () => {
     const elapsedMs = Math.max(60000, (focusDuration * 60 - timeLeft) * 1000);
+    let wbData: string | undefined = undefined;
+    if (typeof window !== "undefined") {
+      wbData = sessionStorage.getItem(`studysphere_wb_${roomId}`) || undefined;
+    }
+
     const data: SummaryData = {
       topic: topic || roomId,
       goal: goal || "Achieve daily goals",
@@ -317,6 +322,7 @@ export default function RoomPage({ params }: RoomPageProps) {
       totalSessions: sessions,
       totalStudyMs: elapsedMs,
       notes,
+      whiteboard: wbData,
     };
     setSummaryData(data);
     setShowSummary(true);
@@ -1032,6 +1038,7 @@ export default function RoomPage({ params }: RoomPageProps) {
                   topic: summaryData.topic || roomId,
                   goal: summaryData.goal || "Achieve daily goals",
                   notes: summaryData.notes || "",
+                  whiteboard: summaryData.whiteboard || (typeof window !== "undefined" ? sessionStorage.getItem(`studysphere_wb_${roomId}`) : undefined) || "",
                   date: new Date().toLocaleDateString(),
                   durationMin: Math.max(1, Math.round((summaryData.totalStudyMs || 60000) / 60000)),
                   completedSessions: summaryData.completedSessions,

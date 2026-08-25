@@ -30,6 +30,97 @@ interface StudyPanelProps {
   onNotesChange: (notes: string) => void;
 }
 
+// Memoized isolated notes editor to completely prevent typing re-render glitches
+const SharedNotesEditor = React.memo(function SharedNotesEditor({
+  notes,
+  onNotesChange,
+}: {
+  notes: string;
+  onNotesChange: (notes: string) => void;
+}) {
+  const [localVal, setLocalVal] = useState(notes || "");
+  const [syncStatus, setSyncStatus] = useState("Synced");
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = useRef(false);
+
+  useEffect(() => {
+    if (!isTypingRef.current && notes !== localVal) {
+      setLocalVal(notes || "");
+    }
+  }, [notes]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setLocalVal(val);
+    setSyncStatus("Syncing...");
+    isTypingRef.current = true;
+
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+
+    timerRef.current = setTimeout(() => {
+      onNotesChange(val);
+      setSyncStatus("Synced");
+      isTypingRef.current = false;
+      timerRef.current = null;
+    }, 300);
+  };
+
+  const handleClear = () => {
+    if (window.confirm("Clear all shared notes in this study session?")) {
+      setLocalVal("");
+      onNotesChange("");
+    }
+  };
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+        {localVal && (
+          <button
+            type="button"
+            onClick={handleClear}
+            title="Clear shared notes"
+            style={{
+              background: "rgba(239, 68, 68, 0.12)",
+              border: "1px solid rgba(239, 68, 68, 0.25)",
+              color: "#EF4444",
+              fontSize: "0.74rem",
+              fontWeight: "700",
+              padding: "4px 8px",
+              borderRadius: "6px",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+            }}
+          >
+            <Trash2 size={12} />
+            Clear
+          </button>
+        )}
+        <span className="cardSyncedIndicator">
+          <span className="vector-pulse-dot" />
+          {syncStatus}
+        </span>
+      </div>
+
+      <textarea
+        className="notesArea"
+        style={{ flex: 1, minHeight: "260px" }}
+        value={localVal}
+        onChange={handleChange}
+        placeholder="Type notes collaboratively with your friend — synced in real time across both screens..."
+      />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.74rem", color: "#9CA3AF", marginTop: "8px" }}>
+        <span>✨ Live keystroke sync via WebSockets</span>
+        <span>No save required</span>
+      </div>
+    </div>
+  );
+});
+
 export function StudyPanel({
   roomId = "study-hall",
   topic,
@@ -53,23 +144,12 @@ export function StudyPanel({
   const [editTopic, setEditTopic] = useState(topic || "");
   const [editGoal, setEditGoal] = useState(goal || "");
   const [editSessions, setEditSessions] = useState(sessions || 4);
-  const [syncStatus, setSyncStatus] = useState("Synced");
-
-  // Local notes state with debounce to prevent typing lag and websocket flooding
-  const [localNotes, setLocalNotes] = useState(notes || "");
-  const debounceNotesRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setEditTopic(topic || "");
     setEditGoal(goal || "");
     setEditSessions(sessions || 4);
   }, [topic, goal, sessions]);
-
-  useEffect(() => {
-    if (notes !== localNotes && !debounceNotesRef.current) {
-      setLocalNotes(notes || "");
-    }
-  }, [notes]);
 
   const handleSaveConfig = () => {
     onUpdateConfig({
@@ -78,21 +158,6 @@ export function StudyPanel({
       sessions: Number(editSessions) || 4,
     });
     setEditMode(false);
-  };
-
-  const handleNotesInput = (val: string) => {
-    setLocalNotes(val);
-    setSyncStatus("Syncing...");
-
-    if (debounceNotesRef.current) {
-      clearTimeout(debounceNotesRef.current);
-    }
-
-    debounceNotesRef.current = setTimeout(() => {
-      onNotesChange(val);
-      setSyncStatus("Synced");
-      debounceNotesRef.current = null;
-    }, 250);
   };
 
   const formatTime = (seconds: number) => {
@@ -432,41 +497,6 @@ export function StudyPanel({
             </button>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            {activeTab === "notes" && notes && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm("Clear all shared notes in this study session?")) {
-                    handleNotesInput("");
-                  }
-                }}
-                title="Clear shared notes"
-                style={{
-                  background: "rgba(239, 68, 68, 0.12)",
-                  border: "1px solid rgba(239, 68, 68, 0.25)",
-                  color: "#EF4444",
-                  fontSize: "0.74rem",
-                  fontWeight: "700",
-                  padding: "4px 8px",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "4px",
-                }}
-              >
-                <Trash2 size={12} />
-                Clear
-              </button>
-            )}
-            <span className="cardSyncedIndicator">
-              <span className="vector-pulse-dot" />
-              {syncStatus}
-            </span>
-          </div>
-        </div>
-
         {/* Whiteboard Canvas Container (Kept mounted to preserve drawing state) */}
         <div
           style={{
@@ -487,17 +517,7 @@ export function StudyPanel({
             flexDirection: "column",
           }}
         >
-          <textarea
-            className="notesArea"
-            style={{ flex: 1, minHeight: "260px" }}
-            value={localNotes}
-            onChange={(e) => handleNotesInput(e.target.value)}
-            placeholder="Type notes collaboratively with your friend — synced in real time across both screens..."
-          />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.74rem", color: "#9CA3AF", marginTop: "8px" }}>
-            <span>✨ Live keystroke sync via WebSockets</span>
-            <span>No save required</span>
-          </div>
+          <SharedNotesEditor notes={notes} onNotesChange={onNotesChange} />
         </div>
       </div>
     </div>

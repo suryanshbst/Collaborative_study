@@ -12,6 +12,7 @@ import {
   FileText,
 } from "lucide-react";
 import { exportNotesAsImage } from "@/lib/exportNotesImage";
+import { exportWhiteboardCanvasAsImage } from "@/lib/exportCanvasImage";
 
 export interface SummaryData {
   topic?: string;
@@ -20,6 +21,7 @@ export interface SummaryData {
   totalSessions?: number;
   totalStudyMs?: number;
   notes?: string;
+  whiteboard?: string;
 }
 
 interface SessionSummaryModalProps {
@@ -40,15 +42,13 @@ export function SessionSummaryModal({ data, onClose, onExit }: SessionSummaryMod
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const downloadNotes = () => {
-    exportNotesAsImage({
+  const downloadCanvasImage = () => {
+    exportWhiteboardCanvasAsImage({
+      elements: data.whiteboard,
       topic: data.topic || "StudySphere",
-      goal: data.goal || "Focus Goal",
-      notes: data.notes || "No notes recorded.",
+      roomId: data.topic || "study-hall",
       date: new Date().toLocaleDateString(),
-      completedSessions: data.completedSessions || 0,
-      totalSessions: data.totalSessions || 4,
-      durationMin: Math.max(1, Math.round((data.totalStudyMs || 60000) / 60000)),
+      notesFallback: data.notes || "",
     });
   };
 
@@ -184,7 +184,7 @@ export function SessionSummaryModal({ data, onClose, onExit }: SessionSummaryMod
               </button>
               <button
                 type="button"
-                onClick={downloadNotes}
+                onClick={downloadCanvasImage}
                 style={{
                   background: "var(--accent-lime, #C5FF4A)",
                   border: "1px solid #B6F03C",
@@ -199,10 +199,10 @@ export function SessionSummaryModal({ data, onClose, onExit }: SessionSummaryMod
                   gap: "4px",
                   boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
                 }}
-                title="Download formatted PNG image"
+                title="Download Whiteboard Canvas Drawing as high-res PNG image"
               >
                 <Download size={13} />
-                PNG
+                Canvas (PNG)
               </button>
               <button
                 type="button"
